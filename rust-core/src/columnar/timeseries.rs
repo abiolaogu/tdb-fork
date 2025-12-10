@@ -13,7 +13,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 
 use super::simd;
-use crate::error::{TdbError, TdbResult};
+use crate::error::{TdbError, Result as TdbResult};
 
 /// Time granularity for bucketing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

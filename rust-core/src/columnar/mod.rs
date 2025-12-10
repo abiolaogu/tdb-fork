@@ -14,14 +14,14 @@ pub mod compression;
 pub mod timeseries;
 
 use std::collections::HashMap;
-use std::sync::Arc;
+
 
 use parking_lot::RwLock;
 
-use crate::error::{TdbError, TdbResult};
+use crate::error::{TdbError, Result as TdbResult};
 
 /// Column data types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ColumnType {
     Bool,
     Int8,
@@ -155,7 +155,7 @@ impl Column {
             dtype,
             data: Vec::with_capacity(capacity * element_size),
             nulls: None,
-            offsets: if dtype.size().is_none() {
+            offsets: if element_size == 0 {
                 Some(Vec::with_capacity(capacity + 1))
             } else {
                 None

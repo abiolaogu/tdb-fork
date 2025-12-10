@@ -1,0 +1,527 @@
+    Checking tdb-core v1.0.0 (/Users/AbiolaOgunsakin1/tdb+ fork/tdb-fork/rust-core)
+warning: unused import: `Compression`
+  --> src/storage/engine.rs:16:56
+   |
+16 | use crate::types::{KeyValue, KeyRange, SequenceNumber, Compression};
+   |                                                        ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `TdbError`
+  --> src/storage/engine.rs:17:28
+   |
+17 | use crate::error::{Result, TdbError};
+   |                            ^^^^^^^^
+
+warning: unused imports: `BufReader`, `Read`, `SeekFrom`, and `Seek`
+ --> src/storage/sstable.rs:4:15
+  |
+4 | use std::io::{BufReader, BufWriter, Read, Write, Seek, SeekFrom};
+  |               ^^^^^^^^^             ^^^^         ^^^^  ^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+ --> src/storage/collection.rs:4:5
+  |
+4 | use parking_lot::RwLock;
+  |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `TdbError`
+ --> src/storage/collection.rs:8:28
+  |
+8 | use crate::error::{Result, TdbError};
+  |                            ^^^^^^^^
+
+warning: unused import: `BufRead`
+ --> src/storage/manifest.rs:5:15
+  |
+5 | use std::io::{BufRead, BufReader, BufWriter, Write};
+  |               ^^^^^^^
+
+warning: unused import: `Ordering`
+ --> src/wal/mod.rs:6:36
+  |
+6 | use std::sync::atomic::{AtomicU64, Ordering};
+  |                                    ^^^^^^^^
+
+warning: unused import: `std::os::unix::fs::OpenOptionsExt`
+  --> src/hybrid/tier.rs:12:5
+   |
+12 | use std::os::unix::fs::OpenOptionsExt;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `AtomicUsize`
+  --> src/hybrid/tier.rs:15:36
+   |
+15 | use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+   |                                    ^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> src/hybrid/tier.rs:16:5
+   |
+16 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `dashmap::DashMap`
+  --> src/hybrid/tier.rs:18:5
+   |
+18 | use dashmap::DashMap;
+   |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `AtomicU32`
+  --> src/hybrid/index.rs:11:25
+   |
+11 | use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+   |                         ^^^^^^^^^
+
+warning: unused import: `dashmap::DashMap`
+  --> src/hybrid/index.rs:14:5
+   |
+14 | use dashmap::DashMap;
+   |     ^^^^^^^^^^^^^^^^
+
+warning: unused import: `super::RecordLocation`
+  --> src/hybrid/index.rs:16:5
+   |
+16 | use super::RecordLocation;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `AtomicU64` and `Ordering`
+  --> src/hybrid/prefetch.rs:10:25
+   |
+10 | use std::sync::atomic::{AtomicU64, Ordering};
+   |                         ^^^^^^^^^  ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> src/hybrid/mod.rs:21:5
+   |
+21 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Duration` and `Instant`
+  --> src/hybrid/mod.rs:23:17
+   |
+23 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^  ^^^^^^^
+
+warning: unused imports: `Mutex` and `RwLock`
+  --> src/hybrid/mod.rs:26:19
+   |
+26 | use parking_lot::{RwLock, Mutex};
+   |                   ^^^^^^  ^^^^^
+
+warning: unused import: `tokio::sync::mpsc`
+  --> src/hybrid/mod.rs:27:5
+   |
+27 | use tokio::sync::mpsc;
+   |     ^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `KeyValue` and `Value`
+  --> src/hybrid/mod.rs:30:20
+   |
+30 | use crate::types::{KeyValue, Value};
+   |                    ^^^^^^^^  ^^^^^
+
+warning: unused import: `std::arch::aarch64::*`
+  --> src/columnar/simd.rs:18:5
+   |
+18 | use std::arch::aarch64::*;
+   |     ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Read` and `Write`
+  --> src/columnar/compression.rs:11:15
+   |
+11 | use std::io::{Read, Write};
+   |               ^^^^  ^^^^^
+
+warning: unused import: `std::ops::Bound`
+  --> src/columnar/timeseries.rs:10:5
+   |
+10 | use std::ops::Bound;
+   |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> src/columnar/timeseries.rs:11:5
+   |
+11 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> src/columnar/timeseries.rs:13:5
+   |
+13 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `Result as TdbResult` and `TdbError`
+  --> src/columnar/timeseries.rs:16:20
+   |
+16 | use crate::error::{TdbError, Result as TdbResult};
+   |                    ^^^^^^^^  ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> src/columnar/mod.rs:17:5
+   |
+17 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> src/columnar/mod.rs:19:5
+   |
+19 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `IoSliceMut` and `IoSlice`
+  --> src/io/uring.rs:13:21
+   |
+13 | use std::io::{self, IoSlice, IoSliceMut};
+   |                     ^^^^^^^  ^^^^^^^^^^
+
+warning: unused import: `AsRawFd`
+  --> src/io/uring.rs:14:25
+   |
+14 | use std::os::unix::io::{AsRawFd, RawFd};
+   |                         ^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> src/io/uring.rs:16:5
+   |
+16 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::VecDeque`
+  --> src/latency/mod.rs:10:5
+   |
+10 | use std::collections::VecDeque;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused imports: `CString`, `c_int`, and `c_void`
+ --> src/ffi/mod.rs:9:24
+  |
+9 | use std::ffi::{c_char, c_int, c_void, CStr, CString};
+  |                        ^^^^^  ^^^^^^        ^^^^^^^
+
+warning: unused variable: `id`
+   --> src/storage/collection.rs:154:39
+    |
+154 |     pub async fn replay_update(&self, id: &DocumentId, doc: Document) -> Result<()> {
+    |                                       ^^ help: if this is intentional, prefix it with an underscore: `_id`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+error[E0515]: cannot return value referencing function parameter `entry`
+   --> src/memory/memtable.rs:109:38
+    |
+109 |         self.data.iter().map(|entry| (entry.key(), entry.value()))
+    |                                      ^-----^^^^^^^^^^^^^^^^^^^^^^
+    |                                      ||
+    |                                      |`entry` is borrowed here
+    |                                      returns a value referencing data owned by the current function
+
+error[E0515]: cannot return value referencing function parameter `entry`
+   --> src/memory/memtable.rs:109:38
+    |
+109 |         self.data.iter().map(|entry| (entry.key(), entry.value()))
+    |                                      ^^^^^^^^^^^^^^-----^^^^^^^^^
+    |                                      |             |
+    |                                      |             `entry` is borrowed here
+    |                                      returns a value referencing data owned by the current function
+
+warning: unused variable: `hdd_store`
+  --> src/hybrid/migration.rs:55:9
+   |
+55 |         hdd_store: Option<&HddStore>,
+   |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_hdd_store`
+
+warning: unused variable: `config`
+  --> src/hybrid/migration.rs:56:9
+   |
+56 |         config: &HybridConfig,
+   |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_config`
+
+error[E0599]: no method named `close` found for struct `Arc<Database>` in the current scope
+  --> src/node_bindings.rs:34:20
+   |
+34 |         self.inner.close()
+   |                    ^^^^^
+   |
+help: there is a method `clone` with a similar name
+   |
+34 -         self.inner.close()
+34 +         self.inner.clone()
+   |
+
+error[E0609]: no field `op` on type `KeyValue`
+   --> src/lib.rs:235:25
+    |
+235 |             match entry.op {
+    |                         ^^ unknown field
+    |
+    = note: available fields are: `key`, `value`, `timestamp`, `sequence`, `deleted`
+
+error[E0689]: can't call method `wrapping_mul` on ambiguous numeric type `{integer}`
+   --> src/storage/sstable.rs:304:46
+    |
+301 |         for i in 0..7 {
+    |             - you must specify a type for this binding, like `i32`
+...
+304 |             let bit_pos = (h1.wrapping_add(i.wrapping_mul(h2))) % num_bits;
+    |                                              ^^^^^^^^^^^^
+
+error[E0277]: the trait bound `AtomicU64: Clone` is not satisfied
+   --> src/hybrid/mod.rs:173:5
+    |
+161 | #[derive(Debug, Clone)]
+    |                 ----- in this derive macro expansion
+...
+173 |     pub access_count: AtomicU64,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `AtomicU64`
+
+error[E0277]: the trait bound `AtomicU64: Clone` is not satisfied
+   --> src/hybrid/mod.rs:176:5
+    |
+161 | #[derive(Debug, Clone)]
+    |                 ----- in this derive macro expansion
+...
+176 |     pub last_access: AtomicU64,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `AtomicU64`
+
+error[E0308]: mismatched types
+   --> src/ffi/mod.rs:255:53
+    |
+255 |     match rt.block_on(engine.insert(collection_str, doc)) {
+    |                              ------                 ^^^ expected `Document`, found `Value`
+    |                              |
+    |                              arguments to this method are incorrect
+    |
+note: method defined here
+   --> src/lib.rs:159:18
+    |
+159 |     pub async fn insert(&self, collection: &str, mut doc: Document) -> Result<DocumentId> {
+    |                  ^^^^^^                          -----------------
+
+error[E0277]: the trait bound `DatabaseStats: serde::Serialize` is not satisfied
+    --> src/ffi/mod.rs:586:35
+     |
+ 586 |     let json = serde_json::to_vec(&stats).unwrap_or_default();
+     |                ------------------ ^^^^^^ unsatisfied trait bound
+     |                |
+     |                required by a bound introduced by this call
+     |
+help: the trait `Serialize` is not implemented for `DatabaseStats`
+    --> src/lib.rs:278:1
+     |
+ 278 | pub struct DatabaseStats {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^
+     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `DatabaseStats` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `Serialize`:
+               &'a T
+               &'a mut T
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+               (T0, T1, T2, T3, T4)
+             and 165 others
+note: required by a bound in `serde_json::to_vec`
+    --> /Users/AbiolaOgunsakin1/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.145/src/ser.rs:2215:17
+     |
+2213 | pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
+     |        ------ required by a bound in this function
+2214 | where
+2215 |     T: ?Sized + Serialize,
+     |                 ^^^^^^^^^ required by this bound in `to_vec`
+
+warning: unused import: `Write`
+ --> src/storage/manifest.rs:5:46
+  |
+5 | use std::io::{BufRead, BufReader, BufWriter, Write};
+  |                                              ^^^^^
+
+warning: unused variable: `data_dir`
+   --> src/storage/engine.rs:403:22
+    |
+403 |     fn load_sstables(data_dir: &PathBuf, manifest: &Manifest) -> Result<Vec<Vec<Arc<SSTable>>>> {
+    |                      ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_data_dir`
+
+warning: unused variable: `bloom_bits_per_key`
+   --> src/storage/sstable.rs:224:55
+    |
+224 |     pub fn new(path: &Path, compression: Compression, bloom_bits_per_key: usize) -> Result<Self> {
+    |                                                       ^^^^^^^^^^^^^^^^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+224 |     pub fn new(path: &Path, compression: Compression, _bloom_bits_per_key: usize) -> Result<Self> {
+    |                                                       +
+help: you might have meant to pattern match on the similarly named constant `BLOCK_SIZE`
+    |
+224 -     pub fn new(path: &Path, compression: Compression, bloom_bits_per_key: usize) -> Result<Self> {
+224 +     pub fn new(path: &Path, compression: Compression, memory::arena::BLOCK_SIZE: usize) -> Result<Self> {
+    |
+
+error[E0515]: cannot return value referencing function parameter `entry`
+  --> src/memory/memtable.rs:75:40
+   |
+75 |         self.data.get(key).map(|entry| entry.value())
+   |                                        -----^^^^^^^^
+   |                                        |
+   |                                        returns a value referencing data owned by the current function
+   |                                        `entry` is borrowed here
+
+error[E0004]: non-exhaustive patterns: `&TdbError::Config(_)`, `&TdbError::Memory(_)`, `&TdbError::NotFound(_)` and 1 more not covered
+   --> src/error.rs:148:15
+    |
+148 |         match self {
+    |               ^^^^ patterns `&TdbError::Config(_)`, `&TdbError::Memory(_)`, `&TdbError::NotFound(_)` and 1 more not covered
+    |
+note: `TdbError` defined here
+   --> src/error.rs:10:10
+    |
+ 10 | pub enum TdbError {
+    |          ^^^^^^^^
+...
+105 |     Config(String),
+    |     ------ not covered
+106 |     #[error("Memory error: {0}")]
+107 |     Memory(String),
+    |     ------ not covered
+108 |     #[error("Not found: {0}")]
+109 |     NotFound(String),
+    |     -------- not covered
+110 |     #[error("Invalid argument: {0}")]
+111 |     InvalidArgument(String),
+    |     --------------- not covered
+    = note: the matched value is of type `&TdbError`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern as shown, or multiple match arms
+    |
+175 ~             TdbError::Cancelled => 101,
+176 ~             _ => todo!(),
+    |
+
+warning: unused variable: `numa_node`
+  --> src/hybrid/tier.rs:56:51
+   |
+56 |     pub fn new(capacity: usize, huge_pages: bool, numa_node: i32) -> TdbResult<Self> {
+   |                                                   ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_numa_node`
+
+warning: value assigned to `pos` is never read
+  --> src/columnar/compression.rs:67:13
+   |
+67 |     let mut pos = 0;
+   |             ^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `pos` is never read
+   --> src/columnar/compression.rs:132:13
+    |
+132 |     let mut pos = 0;
+    |             ^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `pos` is never read
+   --> src/columnar/compression.rs:137:5
+    |
+137 |     pos = 8;
+    |     ^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: value assigned to `pos` is never read
+   --> src/columnar/compression.rs:285:17
+    |
+285 |         let mut pos = 0;
+    |                 ^^^
+    |
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `bucket_size`
+   --> src/columnar/timeseries.rs:280:13
+    |
+280 |         let bucket_size = granularity.nanos();
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_bucket_size`
+
+error[E0382]: borrow of moved value: `dtype`
+   --> src/columnar/mod.rs:158:25
+    |
+151 |     pub fn with_capacity(name: impl Into<String>, dtype: ColumnType, capacity: usize) -> Self {
+    |                                                   ----- move occurs because `dtype` has type `ColumnType`, which does not implement the `Copy` trait
+...
+155 |             dtype,
+    |             ----- value moved here
+...
+158 |             offsets: if dtype.size().is_none() {
+    |                         ^^^^^ value borrowed here after move
+    |
+note: if `ColumnType` implemented `Clone`, you could clone the value
+   --> src/columnar/mod.rs:25:1
+    |
+ 25 | pub enum ColumnType {
+    | ^^^^^^^^^^^^^^^^^^^ consider implementing `Clone` for this type
+...
+155 |             dtype,
+    |             ----- you could clone this value
+
+warning: unused variable: `len`
+   --> src/io/uring.rs:184:9
+    |
+184 |         len: usize,
+    |         ^^^
+    |
+help: if this is intentional, prefix it with an underscore
+    |
+184 |         _len: usize,
+    |         +
+help: you might have meant to pattern match on the similarly named constant `BLOCK_SIZE`
+    |
+184 -         len: usize,
+184 +         memory::arena::BLOCK_SIZE: usize,
+    |
+
+warning: unused variable: `engine`
+   --> src/ffi/mod.rs:190:9
+    |
+190 |     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+    |         ^^^^^^ help: if this is intentional, prefix it with an underscore: `_engine`
+
+warning: unused variable: `name_str`
+   --> src/ffi/mod.rs:195:9
+    |
+195 |     let name_str = match CStr::from_ptr(name).to_str() {
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_name_str`
+
+warning: unused variable: `query_str`
+   --> src/ffi/mod.rs:457:9
+    |
+457 |     let query_str = match CStr::from_ptr(query_json).to_str() {
+    |         ^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_query_str`
+
+warning: unused variable: `script_name`
+  --> src/scripting/triggers.rs:42:22
+   |
+42 |                  for script_name in scripts.iter() {
+   |                      ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_script_name`
+
+warning: unused variable: `doc`
+  --> src/scripting/triggers.rs:39:67
+   |
+39 |     pub fn on_event(&self, collection: &str, event: TriggerEvent, doc: &mut Document) -> Result<()> {
+   |                                                                   ^^^ help: if this is intentional, prefix it with an underscore: `_doc`
+
+warning: variable does not need to be mutable
+  --> src/scripting/mod.rs:16:13
+   |
+16 |         let mut engine = Engine::new();
+   |             ----^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+Some errors have detailed explanations: E0004, E0277, E0308, E0382, E0515, E0599, E0609, E0689.
+For more information about an error, try `rustc --explain E0004`.
+warning: `tdb-core` (lib) generated 52 warnings
+error: could not compile `tdb-core` (lib) due to 12 previous errors; 52 warnings emitted

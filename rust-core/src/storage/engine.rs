@@ -293,7 +293,7 @@ impl StorageEngine {
         )?;
 
         for (key, kv) in memtable.iter() {
-            builder.add(key, kv)?;
+            builder.add(&key, &kv)?;
         }
 
         let sstable = builder.finish()?;

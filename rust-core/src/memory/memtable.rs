@@ -65,14 +65,14 @@ impl MemTable {
     }
 
     /// Get a value by key
-    pub fn get(&self, key: &[u8]) -> Option<&KeyValue> {
+    pub fn get(&self, key: &[u8]) -> Option<KeyValue> {
         // Fast path: check bloom filter first
         if !self.bloom.read().may_contain(key) {
             return None;
         }
 
         // Look up in skip list
-        self.data.get(key).map(|entry| entry.value())
+        self.data.get(key).map(|entry| entry.value().clone())
     }
 
     /// Delete a key (insert tombstone)
@@ -105,8 +105,8 @@ impl MemTable {
     }
 
     /// Iterate over all entries in order
-    pub fn iter(&self) -> impl Iterator<Item = (&Vec<u8>, &KeyValue)> {
-        self.data.iter().map(|entry| (entry.key(), entry.value()))
+    pub fn iter(&self) -> impl Iterator<Item = (Vec<u8>, KeyValue)> + '_ {
+        self.data.iter().map(|entry| (entry.key().clone(), entry.value().clone()))
     }
 
     /// Get creation timestamp

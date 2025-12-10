@@ -27,6 +27,7 @@ extern TdbResult tdb_drop_collection(TdbHandle handle, const char* name);
 
 // Document operations
 extern TdbResult tdb_insert(TdbHandle handle, const char* collection, const char* doc_json, TdbBuffer* id_out);
+extern TdbResult tdb_insert_mp(TdbHandle handle, const char* collection, const uint8_t* input_data, size_t input_len, TdbBuffer* id_out);
 extern TdbResult tdb_get(TdbHandle handle, const char* collection, const char* id, TdbBuffer* doc_out);
 extern TdbResult tdb_update(TdbHandle handle, const char* collection, const char* id, const char* updates);
 extern TdbResult tdb_delete(TdbHandle handle, const char* collection, const char* id);
@@ -51,6 +52,8 @@ import (
 	"errors"
 	"sync"
 	"unsafe"
+
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 // Error codes
@@ -175,6 +178,36 @@ func (db *Database) Insert(collection string, doc interface{}) (string, error) {
 
 	var idBuf C.TdbBuffer
 	result := C.tdb_insert(db.handle, cCollection, cDoc, &idBuf)
+	if err := resultToError(result); err != nil {
+		return "", err
+	}
+	defer C.tdb_buffer_free(&idBuf)
+
+	id := C.GoStringN((*C.char)(unsafe.Pointer(idBuf.data)), C.int(idBuf.len))
+	return id, nil
+}
+
+// InsertMP inserts a document using MessagePack encoding (faster than JSON)
+func (db *Database) InsertMP(collection string, doc interface{}) (string, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	data, err := msgpack.Marshal(doc)
+	if err != nil {
+		return "", err
+	}
+
+	cCollection := C.CString(collection)
+	defer C.free(unsafe.Pointer(cCollection))
+
+	var idBuf C.TdbBuffer
+	result := C.tdb_insert_mp(
+		db.handle,
+		cCollection,
+		(*C.uint8_t)(unsafe.Pointer(&data[0])),
+		C.size_t(len(data)),
+		&idBuf,
+	)
 	if err := resultToError(result); err != nil {
 		return "", err
 	}

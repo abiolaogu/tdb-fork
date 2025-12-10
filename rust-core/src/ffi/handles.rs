@@ -4,12 +4,12 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, OnceLock};
 
-use crate::storage::engine::StorageEngine;
+use crate::Database;
 
 /// Global handle map for storage engines
-pub static ENGINES: HandleMap<Arc<StorageEngine>> = HandleMap::new();
+pub static ENGINES: OnceLock<HandleMap<Arc<Database>>> = OnceLock::new();
 
 /// Thread-safe handle map for managing FFI resources
 pub struct HandleMap<T> {
@@ -18,7 +18,7 @@ pub struct HandleMap<T> {
 }
 
 impl<T> HandleMap<T> {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         HandleMap {
             next_id: AtomicU64::new(1),
             handles: RwLock::new(HashMap::new()),

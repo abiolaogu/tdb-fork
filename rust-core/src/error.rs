@@ -99,6 +99,16 @@ pub enum TdbError {
 
     #[error("Operation cancelled")]
     Cancelled,
+
+    // Legacy/Generic mappings
+    #[error("Configuration error: {0}")]
+    Config(String),
+    #[error("Memory error: {0}")]
+    Memory(String),
+    #[error("Not found: {0}")]
+    NotFound(String),
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
 }
 
 impl From<bincode::Error> for TdbError {
@@ -163,6 +173,10 @@ impl TdbError {
             TdbError::Internal(_) => 99,
             TdbError::NotImplemented(_) => 100,
             TdbError::Cancelled => 101,
+            TdbError::Config(_) => 200,
+            TdbError::Memory(_) => 201,
+            TdbError::NotFound(_) => 202,
+            TdbError::InvalidArgument(_) => 203,
         }
     }
 }

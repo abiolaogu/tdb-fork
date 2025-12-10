@@ -20,7 +20,8 @@ pub struct SSTable {
     entry_count: usize,
 }
 
-struct IndexEntry {
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct IndexEntry {
     key: Vec<u8>,
     offset: u64,
     size: u32,
@@ -297,7 +298,7 @@ impl SSTableBuilder {
         let hash = xxhash_rust::xxh3::xxh3_64(key);
         let num_bits = self.bloom_bits.len() * 64;
 
-        for i in 0..7 {
+        for i in 0usize..7 {
             let h1 = hash as usize;
             let h2 = (hash >> 32) as usize;
             let bit_pos = (h1.wrapping_add(i.wrapping_mul(h2))) % num_bits;

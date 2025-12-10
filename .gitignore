@@ -37,5 +37,12 @@ tdb_data/
 
 # Package manager locks (choose one)
 package-lock.json
-yarn.lock
-pnpm-lock.yaml
+
+# Rust
+target/
+rust-core/target/
+**/*.rs.bk
+
+# Test Data
+tdb_test_data*/
+

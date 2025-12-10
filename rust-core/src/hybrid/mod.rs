@@ -26,7 +26,7 @@ use dashmap::DashMap;
 use parking_lot::{RwLock, Mutex};
 use tokio::sync::mpsc;
 
-use crate::error::{TdbError, TdbResult};
+use crate::error::{TdbError, Result as TdbResult};
 use crate::types::{KeyValue, Value};
 
 /// Storage tier types
@@ -43,7 +43,7 @@ pub enum StorageTier {
 }
 
 /// Configuration for hybrid storage
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct HybridConfig {
     /// Storage mode
     pub mode: StorageTier,
@@ -158,7 +158,7 @@ impl HybridConfig {
 }
 
 /// Location metadata for a record
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RecordLocation {
     /// Current storage tier
     pub tier: StorageTier,

@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 
-use crate::error::TdbResult;
+use crate::error::Result as TdbResult;
 use super::{
     HybridConfig, HybridStats, IndexEntry, RecordLocation, StorageTier,
     tier::{RamStore, SsdStore, HddStore},

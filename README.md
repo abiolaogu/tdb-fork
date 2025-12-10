@@ -83,6 +83,12 @@
 - **Interactive CLI**: Syntax highlighting and auto-completion
 - **Excellent Errors**: Clear, actionable error messages
 
+### Embedded Scripting (Rhai)
+- **Safe Execution**: Sandboxed scripting environment
+- **Custom Logic**: Write stored procedures and triggers in Rhai
+- **High Performance**: Compiled scripts for fast execution
+- **Integration**: Direct access to TDB+ document types and collections
+
 ## Quick Start
 
 ### Installation

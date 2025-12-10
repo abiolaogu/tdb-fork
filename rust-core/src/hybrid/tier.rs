@@ -18,7 +18,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 
-use crate::error::{TdbError, TdbResult};
+use crate::error::{TdbError, Result as TdbResult};
 use super::StorageTier;
 
 // =============================================================================

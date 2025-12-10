@@ -52,7 +52,7 @@ impl MemoryManager {
     }
 
     /// Get a value by key
-    pub fn get(&self, key: &[u8]) -> Option<&KeyValue> {
+    pub fn get(&self, key: &[u8]) -> Option<KeyValue> {
         // Check active memtable first
         if let Some(kv) = self.active.get(key) {
             return Some(kv);

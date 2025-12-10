@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use crate::error::{TdbError, TdbResult};
+use crate::error::{TdbError, Result as TdbResult};
 
 /// io_uring configuration
 #[derive(Debug, Clone)]
@@ -132,7 +132,7 @@ pub struct IoUring {
     pending: Mutex<VecDeque<PendingOp>>,
 
     /// Registered buffers
-    buffers: Vec<Vec<u8>>,
+    buffers: Mutex<Vec<Vec<u8>>>,
 
     /// Free buffer indices
     free_buffers: Mutex<VecDeque<usize>>,
@@ -170,7 +170,7 @@ impl IoUring {
             config,
             next_id: AtomicU64::new(1),
             pending: Mutex::new(VecDeque::new()),
-            buffers,
+            buffers: Mutex::new(buffers),
             free_buffers: Mutex::new(free_buffers),
             stats: UringStats::default(),
         })
@@ -210,9 +210,10 @@ impl IoUring {
 
         // Copy data to registered buffer
         if let Some(idx) = Some(buffer_idx) {
-            let buffer = &mut self.buffers[idx];
+            let mut buffers = self.buffers.lock();
+            let buffer = &mut buffers[idx];
             let len = data.len().min(buffer.len());
-            // Note: In real implementation, buffer would be mutable
+            buffer[..len].copy_from_slice(&data[..len]);
         }
 
         self.pending.lock().push_back(PendingOp {

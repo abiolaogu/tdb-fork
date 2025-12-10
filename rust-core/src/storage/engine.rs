@@ -14,7 +14,7 @@ use tokio::sync::mpsc;
 use crate::config::Config;
 use crate::memory::{MemTable, BlockCache};
 use crate::types::{KeyValue, KeyRange, SequenceNumber, Compression};
-use crate::error::{Result, TdbError};
+use crate::error::{Result, LumaError};
 use crate::wal::WriteAheadLog;
 
 use super::sstable::{SSTable, SSTableBuilder};

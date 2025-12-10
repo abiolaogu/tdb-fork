@@ -1,5 +1,5 @@
 /**
- * TDB+ Database Tests
+ * LumaDB Database Tests
  */
 
 import { Database } from '../src/core/Database';
@@ -9,7 +9,7 @@ describe('Database', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = Database.create('test_db');
+    db = Database.create('test_luma_db');
     await db.open();
   });
 
@@ -19,7 +19,7 @@ describe('Database', () => {
 
   describe('Basic Operations', () => {
     it('should create and open database', () => {
-      expect(db.getName()).toBe('test_db');
+      expect(db.getName()).toBe('test_luma_db');
     });
 
     it('should create collections', () => {
@@ -44,9 +44,9 @@ describe('Database', () => {
     });
   });
 
-  describe('TQL Queries', () => {
-    it('should insert data with TQL', async () => {
-      const result = await db.tql(
+  describe('LQL Queries', () => {
+    it('should insert data with LQL', async () => {
+      const result = await db.lql(
         `INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 28)`
       );
       expect(result.count).toBe(1);
@@ -57,45 +57,45 @@ describe('Database', () => {
       });
     });
 
-    it('should select data with TQL', async () => {
-      await db.tql(`INSERT INTO users (name, age) VALUES ('Alice', 28)`);
-      await db.tql(`INSERT INTO users (name, age) VALUES ('Bob', 32)`);
+    it('should select data with LQL', async () => {
+      await db.lql(`INSERT INTO users (name, age) VALUES ('Alice', 28)`);
+      await db.lql(`INSERT INTO users (name, age) VALUES ('Bob', 32)`);
 
-      const result = await db.tql(`SELECT * FROM users WHERE age > 25`);
+      const result = await db.lql(`SELECT * FROM users WHERE age > 25`);
       expect(result.count).toBe(2);
     });
 
     it.skip('should select with ORDER BY and LIMIT', async () => {
-      await db.tql(`INSERT INTO users (name, age) VALUES ('Alice', 28)`);
-      await db.tql(`INSERT INTO users (name, age) VALUES ('Bob', 32)`);
-      await db.tql(`INSERT INTO users (name, age) VALUES ('Charlie', 25)`);
+      await db.lql(`INSERT INTO users (name, age) VALUES ('Alice', 28)`);
+      await db.lql(`INSERT INTO users (name, age) VALUES ('Bob', 32)`);
+      await db.lql(`INSERT INTO users (name, age) VALUES ('Charlie', 25)`);
 
-      const result = await db.tql(`SELECT * FROM users ORDER BY age DESC LIMIT 2`);
+      const result = await db.lql(`SELECT * FROM users ORDER BY age DESC LIMIT 2`);
       expect(result.count).toBe(2);
       expect(result.documents[0].name).toBe('Bob');
       expect(result.documents[1].name).toBe('Alice');
     });
 
-    it.skip('should update data with TQL', async () => {
-      await db.tql(`INSERT INTO users (name, status) VALUES ('Alice', 'inactive')`);
+    it.skip('should update data with LQL', async () => {
+      await db.lql(`INSERT INTO users (name, status) VALUES ('Alice', 'inactive')`);
 
-      const result = await db.tql(
+      const result = await db.lql(
         `UPDATE users SET status = 'active' WHERE name = 'Alice'`
       );
       expect(result.count).toBe(1);
 
-      const check = await db.tql(`SELECT * FROM users WHERE name = 'Alice'`);
+      const check = await db.lql(`SELECT * FROM users WHERE name = 'Alice'`);
       expect(check.documents[0].status).toBe('active');
     });
 
-    it.skip('should delete data with TQL', async () => {
-      await db.tql(`INSERT INTO users (name, inactive) VALUES ('Alice', true)`);
-      await db.tql(`INSERT INTO users (name, inactive) VALUES ('Bob', false)`);
+    it.skip('should delete data with LQL', async () => {
+      await db.lql(`INSERT INTO users (name, inactive) VALUES ('Alice', true)`);
+      await db.lql(`INSERT INTO users (name, inactive) VALUES ('Bob', false)`);
 
-      const result = await db.tql(`DELETE FROM users WHERE inactive = true`);
+      const result = await db.lql(`DELETE FROM users WHERE inactive = true`);
       expect(result.count).toBe(1);
 
-      const remaining = await db.tql(`SELECT * FROM users`);
+      const remaining = await db.lql(`SELECT * FROM users`);
       expect(remaining.count).toBe(1);
       expect(remaining.documents[0].name).toBe('Bob');
     });
@@ -190,7 +190,7 @@ describe('Database', () => {
         await tx.collection('users').insert({ name: 'Bob' });
       });
 
-      const result = await db.tql(`SELECT * FROM users`);
+      const result = await db.lql(`SELECT * FROM users`);
       expect(result.count).toBe(2);
     });
 
@@ -204,7 +204,7 @@ describe('Database', () => {
         // Expected
       }
 
-      const result = await db.tql(`SELECT * FROM users`);
+      const result = await db.lql(`SELECT * FROM users`);
       expect(result.count).toBe(0);
     });
   });
@@ -214,7 +214,7 @@ describe('Database', () => {
       const events: any[] = [];
       db.on('document:created', (e) => events.push(e));
 
-      await db.tql(`INSERT INTO users (name) VALUES ('Alice')`);
+      await db.lql(`INSERT INTO users (name) VALUES ('Alice')`);
 
       expect(events.length).toBe(1);
       expect(events[0].data.collection).toBe('users');
@@ -224,10 +224,10 @@ describe('Database', () => {
       const events: any[] = [];
       db.on('query:executed', (e) => events.push(e));
 
-      await db.tql(`SELECT * FROM users`);
+      await db.lql(`SELECT * FROM users`);
 
       expect(events.length).toBe(1);
-      expect(events[0].data.language).toBe('tql');
+      expect(events[0].data.language).toBe('lql');
     });
   });
 });
@@ -237,7 +237,7 @@ describe('Collection', () => {
   let users: Collection;
 
   beforeEach(async () => {
-    db = Database.create('test_db');
+    db = Database.create('test_luma_db');
     await db.open();
     users = db.collection('users');
   });

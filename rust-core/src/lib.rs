@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! TDB+ Core Storage Engine
 //!
 //! A high-performance, distributed storage engine written in Rust.
@@ -63,6 +64,7 @@ pub mod index;
 pub mod memory;
 pub mod wal;
 pub mod error;
+
 pub mod config;
 pub mod types;
 pub mod shard;
@@ -83,7 +85,7 @@ pub use types::Document;
 pub use index::{Index, IndexType, BTreeIndex, HashIndex};
 pub use memory::{MemTable, BlockCache};
 pub use wal::WriteAheadLog;
-pub use error::{TdbError, Result};
+pub use error::{LumaError, Result};
 pub use config::Config;
 pub use types::*;
 pub use shard::ShardManager;
@@ -302,7 +304,7 @@ pub struct WalEntry {
 mod python_bindings;
 
 #[no_mangle]
-pub extern "C" fn tdb_version() -> *const std::ffi::c_char {
+pub extern "C" fn luma_version() -> *const std::ffi::c_char {
     static VERSION: &str = "2.0.0\0";
     VERSION.as_ptr() as *const std::ffi::c_char
 }

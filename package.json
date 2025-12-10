@@ -1,12 +1,12 @@
 {
-  "name": "tdb-plus",
+  "name": "lumadb",
   "version": "1.0.0",
-  "description": "TDB+ - A modern, user-friendly database with multiple query languages and enterprise features",
+  "description": "LumaDB - High-performance distributed database, with multiple query languages and enterprise features",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "tdb": "./dist/cli/index.js",
-    "tdb-server": "./dist/server/index.js"
+    "lumadb": "./dist/cli/index.js",
+    "luma-server": "./dist/server/index.js"
   },
   "scripts": {
     "build": "tsc",

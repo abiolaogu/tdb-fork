@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * TDB+ Command Line Interface
+ * LumaDB Command Line Interface
  *
  * Interactive REPL with support for multiple query languages,
  * syntax highlighting, auto-completion, and helpful error messages.
@@ -9,7 +9,7 @@
 
 import * as readline from 'readline';
 import { Database } from '../core/Database';
-import { QueryLanguage, TDBError, QuerySyntaxError } from '../types';
+import { QueryLanguage, LumaError, QuerySyntaxError } from '../types';
 import { VERSION, CODENAME } from '../index';
 
 // ANSI color codes
@@ -27,7 +27,7 @@ const colors = {
   bgBlue: '\x1b[44m',
 };
 
-class TDBCLI {
+class LumaCLI {
   private db: Database;
   private rl: readline.Interface;
   private currentLanguage: QueryLanguage;
@@ -36,8 +36,8 @@ class TDBCLI {
   private multilineBuffer: string;
 
   constructor() {
-    this.db = Database.create('tdb_cli');
-    this.currentLanguage = 'tql';
+    this.db = Database.create('luma_cli');
+    this.currentLanguage = 'lql';
     this.historyFile = [];
     this.multilineMode = false;
     this.multilineBuffer = '';
@@ -72,22 +72,24 @@ class TDBCLI {
     console.log(`
 ${colors.cyan}╔══════════════════════════════════════════════════════════════════╗
 ║                                                                    ║
-║   ${colors.bright}████████╗██████╗ ██████╗     ╋                                ${colors.reset}${colors.cyan}║
-║   ${colors.bright}╚══██╔══╝██╔══██╗██╔══██╗   ╋╋╋                               ${colors.reset}${colors.cyan}║
-║   ${colors.bright}   ██║   ██║  ██║██████╔╝  ╋╋╋╋╋  PLUS                        ${colors.reset}${colors.cyan}║
-║   ${colors.bright}   ██║   ██║  ██║██╔══██╗   ╋╋╋                               ${colors.reset}${colors.cyan}║
-║   ${colors.bright}   ██║   ██████╔╝██████╔╝    ╋                                ${colors.reset}${colors.cyan}║
-║   ${colors.bright}   ╚═╝   ╚═════╝ ╚═════╝                                      ${colors.reset}${colors.cyan}║
+║   ${colors.bright}██╗      ██╗   ██╗███╗   ███╗ █████╗ ██████╗ ██████╗          ${colors.reset}${colors.cyan}║
+║   ${colors.bright}██║      ██║   ██║████╗ ████║██╔══██╗██╔══██╗██╔══██╗         ${colors.reset}${colors.cyan}║
+║   ${colors.bright}██║      ██║   ██║██╔████╔██║███████║██║  ██║██████╔╝         ${colors.reset}${colors.cyan}║
+║   ${colors.bright}██║      ██║   ██║██║╚██╔╝██║██╔══██║██║  ██║██╔══██╗         ${colors.reset}${colors.cyan}║
+║   ${colors.bright}███████╗╚██████╔╝██║ ╚═╝ ██║██║  ██║██████╔╝██████╔╝         ${colors.reset}${colors.cyan}║
+║   ${colors.bright}╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝ ╚═════╝          ${colors.reset}${colors.cyan}║
 ║                                                                    ║
 ║   ${colors.white}Version ${VERSION} "${CODENAME}"${colors.cyan}                                        ║
 ║   ${colors.dim}The Modern, User-Friendly Database${colors.reset}${colors.cyan}                          ║
 ║                                                                    ║
+║   ${colors.bright}L U M A   D A T A B A S E${colors.reset}${colors.cyan}                                    ║
+║                                                                    ║
 ╚══════════════════════════════════════════════════════════════════╝${colors.reset}
 
-${colors.green}Welcome to TDB+!${colors.reset} Type ${colors.yellow}.help${colors.reset} for commands or start querying.
+${colors.green}Welcome to LumaDB!${colors.reset} Type ${colors.yellow}.help${colors.reset} for commands or start querying.
 
 ${colors.dim}Query Languages:${colors.reset}
-  ${colors.cyan}TQL${colors.reset} - SQL-like:    SELECT * FROM users WHERE age > 21
+  ${colors.cyan}LQL${colors.reset} - SQL-like:    SELECT * FROM users WHERE age > 21
   ${colors.cyan}NQL${colors.reset} - Natural:     find all users where age is greater than 21
   ${colors.cyan}JQL${colors.reset} - JSON:        { "find": "users", "filter": { "age": { "$gt": 21 } } }
 
@@ -97,7 +99,7 @@ Current language: ${colors.bright}${this.currentLanguage.toUpperCase()}${colors.
 
   private getPrompt(): string {
     const langColor = {
-      tql: colors.blue,
+      lql: colors.blue,
       nql: colors.green,
       jql: colors.magenta,
     }[this.currentLanguage];
@@ -167,22 +169,22 @@ Current language: ${colors.bright}${this.currentLanguage.toUpperCase()}${colors.
       case 'language':
         if (args[0]) {
           const lang = args[0].toLowerCase() as QueryLanguage;
-          if (['tql', 'nql', 'jql'].includes(lang)) {
+          if (['lql', 'nql', 'jql'].includes(lang)) {
             this.currentLanguage = lang;
             this.rl.setPrompt(this.getPrompt());
             console.log(`${colors.green}Switched to ${lang.toUpperCase()}${colors.reset}`);
           } else {
-            console.log(`${colors.red}Unknown language: ${args[0]}. Use: tql, nql, or jql${colors.reset}`);
+            console.log(`${colors.red}Unknown language: ${args[0]}. Use: lql, nql, or jql${colors.reset}`);
           }
         } else {
           console.log(`Current language: ${colors.bright}${this.currentLanguage.toUpperCase()}${colors.reset}`);
         }
         break;
 
-      case 'tql':
-        this.currentLanguage = 'tql';
+      case 'lql':
+        this.currentLanguage = 'lql';
         this.rl.setPrompt(this.getPrompt());
-        console.log(`${colors.green}Switched to TQL (SQL-like)${colors.reset}`);
+        console.log(`${colors.green}Switched to LQL (SQL-like)${colors.reset}`);
         break;
 
       case 'nql':
@@ -330,7 +332,7 @@ Current language: ${colors.bright}${this.currentLanguage.toUpperCase()}${colors.
       if (error.position !== undefined) {
         console.log(`${colors.dim}At position: ${error.position}${colors.reset}`);
       }
-    } else if (error instanceof TDBError) {
+    } else if (error instanceof LumaError) {
       console.log(`\n${colors.red}Error (${error.code}): ${error.message}${colors.reset}`);
     } else {
       console.log(`\n${colors.red}Error: ${error.message || error}${colors.reset}`);
@@ -339,11 +341,11 @@ Current language: ${colors.bright}${this.currentLanguage.toUpperCase()}${colors.
 
   private printHelp(): void {
     console.log(`
-${colors.bright}TDB+ Commands:${colors.reset}
+${colors.bright}LumaDB Commands:${colors.reset}
 
   ${colors.yellow}.help, .h, .?${colors.reset}      Show this help message
-  ${colors.yellow}.lang <language>${colors.reset}  Switch query language (tql, nql, jql)
-  ${colors.yellow}.tql${colors.reset}               Switch to TQL (SQL-like)
+  ${colors.yellow}.lang <language>${colors.reset}  Switch query language (lql, nql, jql)
+  ${colors.yellow}.lql${colors.reset}               Switch to LQL (SQL-like)
   ${colors.yellow}.nql${colors.reset}               Switch to NQL (Natural Language)
   ${colors.yellow}.jql${colors.reset}               Switch to JQL (JSON)
   ${colors.yellow}.collections${colors.reset}       List all collections
@@ -351,7 +353,7 @@ ${colors.bright}TDB+ Commands:${colors.reset}
   ${colors.yellow}.examples${colors.reset}          Show query examples
   ${colors.yellow}.tutorial${colors.reset}          Interactive tutorial
   ${colors.yellow}.clear${colors.reset}             Clear the screen
-  ${colors.yellow}.exit, .quit${colors.reset}       Exit TDB+
+  ${colors.yellow}.exit, .quit${colors.reset}       Exit LumaDB
 
 ${colors.bright}Query Tips:${colors.reset}
   - End a line with \\ for multi-line queries
@@ -363,7 +365,7 @@ ${colors.bright}Query Tips:${colors.reset}
 
   private printExamples(): void {
     console.log(`
-${colors.bright}TQL Examples (SQL-like):${colors.reset}
+${colors.bright}LQL Examples (SQL-like):${colors.reset}
   SELECT * FROM users
   SELECT name, email FROM users WHERE age > 21 ORDER BY name
   INSERT INTO users (name, email, age) VALUES ('John', 'john@example.com', 25)
@@ -392,32 +394,32 @@ ${colors.bright}JQL Examples (JSON):${colors.reset}
 
   private printTutorial(): void {
     console.log(`
-${colors.bright}Welcome to the TDB+ Tutorial!${colors.reset}
+${colors.bright}Welcome to the LumaDB Tutorial!${colors.reset}
 
-Let's learn the basics of TDB+ step by step.
+Let's learn the basics of LumaDB step by step.
 
 ${colors.cyan}Step 1: Create your first collection${colors.reset}
-  TQL: INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 28)
+  LQL: INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 28)
   NQL: add to users name "Alice", email "alice@example.com", age 28
   JQL: { "insert": "users", "documents": [{ "name": "Alice", "email": "alice@example.com", "age": 28 }] }
 
 ${colors.cyan}Step 2: Query your data${colors.reset}
-  TQL: SELECT * FROM users
+  LQL: SELECT * FROM users
   NQL: find all users
   JQL: { "find": "users" }
 
 ${colors.cyan}Step 3: Filter results${colors.reset}
-  TQL: SELECT * FROM users WHERE age > 25
+  LQL: SELECT * FROM users WHERE age > 25
   NQL: get users where age is greater than 25
   JQL: { "find": "users", "filter": { "age": { "$gt": 25 } } }
 
 ${colors.cyan}Step 4: Update documents${colors.reset}
-  TQL: UPDATE users SET age = 29 WHERE name = 'Alice'
+  LQL: UPDATE users SET age = 29 WHERE name = 'Alice'
   NQL: update users set age to 29 where name equals "Alice"
   JQL: { "update": "users", "filter": { "name": "Alice" }, "set": { "age": 29 } }
 
 ${colors.cyan}Step 5: Delete documents${colors.reset}
-  TQL: DELETE FROM users WHERE name = 'Alice'
+  LQL: DELETE FROM users WHERE name = 'Alice'
   NQL: remove users where name equals "Alice"
   JQL: { "delete": "users", "filter": { "name": "Alice" } }
 
@@ -427,7 +429,7 @@ ${colors.dim}Type .examples for more query examples${colors.reset}
 
   private completer(line: string): [string[], string] {
     const keywords = [
-      // TQL keywords
+      // LQL keywords
       'SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET',
       'DELETE', 'ORDER', 'BY', 'ASC', 'DESC', 'LIMIT', 'OFFSET', 'AND', 'OR',
       'GROUP', 'HAVING', 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'CREATE', 'DROP',
@@ -438,7 +440,7 @@ ${colors.dim}Type .examples for more query examples${colors.reset}
       'equals', 'greater', 'less', 'than', 'contains', 'starts', 'ends',
       'between', 'first', 'top', 'limit', 'skip',
       // Commands
-      '.help', '.lang', '.tql', '.nql', '.jql', '.collections', '.stats',
+      '.help', '.lang', '.lql', '.nql', '.jql', '.collections', '.stats',
       '.examples', '.tutorial', '.clear', '.exit', '.quit',
     ];
 
@@ -482,5 +484,5 @@ ${colors.dim}Type .examples for more query examples${colors.reset}
 }
 
 // Main entry point
-const cli = new TDBCLI();
+const cli = new LumaCLI();
 cli.start().catch(console.error);

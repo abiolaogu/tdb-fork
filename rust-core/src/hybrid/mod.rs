@@ -26,7 +26,7 @@ use dashmap::DashMap;
 use parking_lot::{RwLock, Mutex};
 use tokio::sync::mpsc;
 
-use crate::error::{TdbError, Result as TdbResult};
+use crate::error::{LumaError, Result as LumaResult};
 use crate::types::{KeyValue, Value};
 
 /// Storage tier types
@@ -314,7 +314,7 @@ pub struct HybridStorage {
 
 impl HybridStorage {
     /// Create new hybrid storage
-    pub async fn new(config: HybridConfig) -> TdbResult<Self> {
+    pub async fn new(config: HybridConfig) -> LumaResult<Self> {
         let stats = Arc::new(HybridStats::default());
         let (shutdown, _) = tokio::sync::broadcast::channel(1);
 
@@ -380,7 +380,7 @@ impl HybridStorage {
     }
 
     /// Put a record (automatically placed in appropriate tier)
-    pub async fn put(&self, key: &[u8], value: &[u8]) -> TdbResult<()> {
+    pub async fn put(&self, key: &[u8], value: &[u8]) -> LumaResult<()> {
         let key_hash = self.hash_key(key);
 
         // Determine initial tier based on mode and memory availability
@@ -396,7 +396,7 @@ impl HybridStorage {
             }
             StorageTier::SSD => {
                 let ssd = self.ssd_store.as_ref()
-                    .ok_or(TdbError::Config("SSD storage not configured".into()))?;
+                    .ok_or(LumaError::Config("SSD storage not configured".into()))?;
                 let offset = ssd.write(value).await?;
                 self.stats.ssd_records.fetch_add(1, Ordering::Relaxed);
                 self.stats.ssd_bytes.fetch_add(value.len(), Ordering::Relaxed);
@@ -404,7 +404,7 @@ impl HybridStorage {
             }
             StorageTier::HDD => {
                 let hdd = self.hdd_store.as_ref()
-                    .ok_or(TdbError::Config("HDD storage not configured".into()))?;
+                    .ok_or(LumaError::Config("HDD storage not configured".into()))?;
                 let offset = hdd.write(value).await?;
                 self.stats.hdd_records.fetch_add(1, Ordering::Relaxed);
                 self.stats.hdd_bytes.fetch_add(value.len(), Ordering::Relaxed);
@@ -420,7 +420,7 @@ impl HybridStorage {
                 } else {
                     // Spill to SSD
                     let ssd = self.ssd_store.as_ref()
-                        .ok_or(TdbError::Config("SSD storage not configured".into()))?;
+                        .ok_or(LumaError::Config("SSD storage not configured".into()))?;
                     let offset = ssd.write(value).await?;
                     self.stats.ssd_records.fetch_add(1, Ordering::Relaxed);
                     self.stats.ssd_bytes.fetch_add(value.len(), Ordering::Relaxed);
@@ -444,7 +444,7 @@ impl HybridStorage {
     }
 
     /// Get a record
-    pub async fn get(&self, key: &[u8]) -> TdbResult<Option<Vec<u8>>> {
+    pub async fn get(&self, key: &[u8]) -> LumaResult<Option<Vec<u8>>> {
         // Lookup in primary index (always O(1) from RAM)
         let entry = match self.primary_index.get(key) {
             Some(e) => e,
@@ -487,7 +487,7 @@ impl HybridStorage {
     }
 
     /// Delete a record
-    pub async fn delete(&self, key: &[u8]) -> TdbResult<bool> {
+    pub async fn delete(&self, key: &[u8]) -> LumaResult<bool> {
         if let Some(mut entry) = self.primary_index.get_mut(key) {
             entry.deleted = true;
             entry.generation += 1;
@@ -503,7 +503,7 @@ impl HybridStorage {
     }
 
     /// Force migration of cold data to lower tier
-    pub async fn compact(&self) -> TdbResult<usize> {
+    pub async fn compact(&self) -> LumaResult<usize> {
         if let Some(ref migrator) = self.migrator {
             let migrated = migrator.migrate_cold_data(
                 &self.primary_index,
@@ -544,7 +544,7 @@ impl HybridStorage {
         }
     }
 
-    async fn read_from_ssd_or_hdd(&self, location: &RecordLocation) -> TdbResult<Vec<u8>> {
+    async fn read_from_ssd_or_hdd(&self, location: &RecordLocation) -> LumaResult<Vec<u8>> {
         // Check read cache first
         let cache_key = (location.tier, location.offset);
         if let Some(data) = self.read_cache.get(&cache_key) {
@@ -558,15 +558,15 @@ impl HybridStorage {
         let data = match location.tier {
             StorageTier::SSD => {
                 let ssd = self.ssd_store.as_ref()
-                    .ok_or(TdbError::Internal("SSD store not available".into()))?;
+                    .ok_or(LumaError::Internal("SSD store not available".into()))?;
                 ssd.read(location.offset, location.size).await?
             }
             StorageTier::HDD => {
                 let hdd = self.hdd_store.as_ref()
-                    .ok_or(TdbError::Internal("HDD store not available".into()))?;
+                    .ok_or(LumaError::Internal("HDD store not available".into()))?;
                 hdd.read(location.offset, location.size).await?
             }
-            _ => return Err(TdbError::Internal("Invalid tier for SSD/HDD read".into())),
+            _ => return Err(LumaError::Internal("Invalid tier for SSD/HDD read".into())),
         };
 
         // Add to cache

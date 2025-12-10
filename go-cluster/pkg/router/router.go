@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tdb-plus/cluster/pkg/cluster"
+	"github.com/lumadb/cluster/pkg/cluster"
 	"go.uber.org/zap"
 )
 

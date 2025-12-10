@@ -3,11 +3,11 @@
 use thiserror::Error;
 
 /// Result type for TDB+ operations
-pub type Result<T> = std::result::Result<T, TdbError>;
+pub type Result<T> = std::result::Result<T, LumaError>;
 
 /// TDB+ error types
 #[derive(Error, Debug)]
-pub enum TdbError {
+pub enum LumaError {
     // Storage errors
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
@@ -111,27 +111,27 @@ pub enum TdbError {
     InvalidArgument(String),
 }
 
-impl From<bincode::Error> for TdbError {
+impl From<bincode::Error> for LumaError {
     fn from(e: bincode::Error) -> Self {
-        TdbError::Serialization(e.to_string())
+        LumaError::Serialization(e.to_string())
     }
 }
 
-impl From<serde_json::Error> for TdbError {
+impl From<serde_json::Error> for LumaError {
     fn from(e: serde_json::Error) -> Self {
-        TdbError::Serialization(e.to_string())
+        LumaError::Serialization(e.to_string())
     }
 }
 
-impl TdbError {
+impl LumaError {
     /// Check if error is retryable
     pub fn is_retryable(&self) -> bool {
         matches!(
             self,
-            TdbError::Io(_)
-                | TdbError::TransactionTimeout
-                | TdbError::WriteBufferFull
-                | TdbError::ShardUnavailable(_)
+            LumaError::Io(_)
+                | LumaError::TransactionTimeout
+                | LumaError::WriteBufferFull
+                | LumaError::ShardUnavailable(_)
         )
     }
 
@@ -139,44 +139,44 @@ impl TdbError {
     pub fn is_corruption(&self) -> bool {
         matches!(
             self,
-            TdbError::Corruption(_) | TdbError::ChecksumMismatch { .. }
+            LumaError::Corruption(_) | LumaError::ChecksumMismatch { .. }
         )
     }
 
     /// Get error code for FFI
     pub fn code(&self) -> i32 {
         match self {
-            TdbError::Io(_) => 1,
-            TdbError::Corruption(_) => 2,
-            TdbError::ChecksumMismatch { .. } => 3,
-            TdbError::FileNotFound(_) => 4,
-            TdbError::DocumentNotFound(_) => 5,
-            TdbError::DocumentExists(_) => 6,
-            TdbError::CollectionNotFound(_) => 7,
-            TdbError::RevisionConflict { .. } => 8,
-            TdbError::Serialization(_) => 9,
-            TdbError::Deserialization(_) => 10,
-            TdbError::TransactionAborted(_) => 11,
-            TdbError::TransactionTimeout => 12,
-            TdbError::Deadlock => 13,
-            TdbError::MemoryLimitExceeded { .. } => 14,
-            TdbError::WriteBufferFull => 15,
-            TdbError::TooManyOpenFiles => 16,
-            TdbError::InvalidConfig(_) => 17,
-            TdbError::WalWriteFailed(_) => 18,
-            TdbError::WalRecoveryFailed(_) => 19,
-            TdbError::CompactionFailed(_) => 20,
-            TdbError::IndexError(_) => 21,
-            TdbError::IndexNotFound(_) => 22,
-            TdbError::ShardNotFound(_) => 23,
-            TdbError::ShardUnavailable(_) => 24,
-            TdbError::Internal(_) => 99,
-            TdbError::NotImplemented(_) => 100,
-            TdbError::Cancelled => 101,
-            TdbError::Config(_) => 200,
-            TdbError::Memory(_) => 201,
-            TdbError::NotFound(_) => 202,
-            TdbError::InvalidArgument(_) => 203,
+            LumaError::Io(_) => 1,
+            LumaError::Corruption(_) => 2,
+            LumaError::ChecksumMismatch { .. } => 3,
+            LumaError::FileNotFound(_) => 4,
+            LumaError::DocumentNotFound(_) => 5,
+            LumaError::DocumentExists(_) => 6,
+            LumaError::CollectionNotFound(_) => 7,
+            LumaError::RevisionConflict { .. } => 8,
+            LumaError::Serialization(_) => 9,
+            LumaError::Deserialization(_) => 10,
+            LumaError::TransactionAborted(_) => 11,
+            LumaError::TransactionTimeout => 12,
+            LumaError::Deadlock => 13,
+            LumaError::MemoryLimitExceeded { .. } => 14,
+            LumaError::WriteBufferFull => 15,
+            LumaError::TooManyOpenFiles => 16,
+            LumaError::InvalidConfig(_) => 17,
+            LumaError::WalWriteFailed(_) => 18,
+            LumaError::WalRecoveryFailed(_) => 19,
+            LumaError::CompactionFailed(_) => 20,
+            LumaError::IndexError(_) => 21,
+            LumaError::IndexNotFound(_) => 22,
+            LumaError::ShardNotFound(_) => 23,
+            LumaError::ShardUnavailable(_) => 24,
+            LumaError::Internal(_) => 99,
+            LumaError::NotImplemented(_) => 100,
+            LumaError::Cancelled => 101,
+            LumaError::Config(_) => 200,
+            LumaError::Memory(_) => 201,
+            LumaError::NotFound(_) => 202,
+            LumaError::InvalidArgument(_) => 203,
         }
     }
 }

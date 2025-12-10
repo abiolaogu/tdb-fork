@@ -1,4 +1,4 @@
-module github.com/tdb-plus/cluster
+module github.com/lumadb/cluster
 
 go 1.21
 

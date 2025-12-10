@@ -25,7 +25,7 @@ impl Procedures {
 
     pub fn execute(&self, name: &str, args: Vec<rhai::Dynamic>) -> Result<rhai::Dynamic> {
         let ast = self.scripts.get(name)
-            .ok_or_else(|| crate::error::TdbError::NotFound(format!("Procedure '{}' not found", name)))?;
+            .ok_or_else(|| crate::error::LumaError::NotFound(format!("Procedure '{}' not found", name)))?;
             
         // Convert Vec<Dynamic> to FuncArgs is tricky dynamically in Rhai without a macro
         // For simplicity in this iteration, we treat it as a single array argument or void

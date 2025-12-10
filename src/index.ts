@@ -1,11 +1,11 @@
 /**
- * TDB+ - Turbo Database Plus
+ * LumaDB - Luma Database
  *
  * A modern, user-friendly database with multiple query languages
  * and enterprise-grade features.
  *
  * Features:
- * - Multiple Query Languages: TQL (SQL-like), NQL (Natural), JQL (JSON)
+ * - Multiple Query Languages: LQL (SQL-like), NQL (Natural), JQL (JSON)
  * - ACID Transactions with multiple isolation levels
  * - Advanced Indexing (B-Tree, Hash, Full-Text)
  * - In-memory and persistent storage
@@ -27,7 +27,7 @@ export { FileStorage } from './storage/FileStorage';
 
 // Query Language exports
 export { QueryEngine } from './query/QueryEngine';
-export { TQLParser } from './query/parsers/TQLParser';
+export { LQLParser } from './query/parsers/LQLParser';
 export { NQLParser } from './query/parsers/NQLParser';
 export { JQLParser } from './query/parsers/JQLParser';
 

@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/tdb-plus/cluster/pkg/api"
-	"github.com/tdb-plus/cluster/pkg/cluster"
-	"github.com/tdb-plus/cluster/pkg/config"
-	"github.com/tdb-plus/cluster/pkg/router"
+	"github.com/lumadb/cluster/pkg/api"
+	"github.com/lumadb/cluster/pkg/cluster"
+	"github.com/lumadb/cluster/pkg/config"
+	"github.com/lumadb/cluster/pkg/router"
 	"go.uber.org/zap"
 )
 

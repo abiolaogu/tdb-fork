@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 
-use crate::error::Result as TdbResult;
+use crate::error::Result as LumaResult;
 use super::{
     HybridConfig, HybridStats, IndexEntry, RecordLocation, StorageTier,
     tier::{RamStore, SsdStore, HddStore},
@@ -54,7 +54,7 @@ impl Migrator {
         ssd_store: Option<&SsdStore>,
         hdd_store: Option<&HddStore>,
         config: &HybridConfig,
-    ) -> TdbResult<usize> {
+    ) -> LumaResult<usize> {
         let ssd = match ssd_store {
             Some(s) => s,
             None => return Ok(0),
@@ -122,7 +122,7 @@ impl Migrator {
         index: &DashMap<Vec<u8>, IndexEntry>,
         ram_store: &RamStore,
         ssd_store: Option<&SsdStore>,
-    ) -> TdbResult<usize> {
+    ) -> LumaResult<usize> {
         let ssd = match ssd_store {
             Some(s) => s,
             None => return Ok(0),

@@ -1,13 +1,13 @@
 [package]
-name = "tdb-core"
-version = "1.0.0"
+name = "luma-core"
+version = "0.1.0"
 edition = "2021"
 authors = ["TDB+ Contributors"]
 description = "High-performance storage engine for TDB+"
 license = "MIT"
 
 [lib]
-name = "tdb_core"
+name = "luma_core"
 crate-type = ["cdylib", "rlib", "staticlib"]
 
 [dependencies]

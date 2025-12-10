@@ -27,13 +27,13 @@ let nativeBinding: NativeBinding;
 
 try {
     // Try loading from release
-    nativeBinding = require('../../rust-core/target/release/tdb_core.node');
+    nativeBinding = require('../../rust-core/target/release/luma_core.node');
 } catch (e) {
     try {
         // Try debug
-        nativeBinding = require('../../rust-core/target/debug/tdb_core.node');
+        nativeBinding = require('../../rust-core/target/debug/luma_core.node');
     } catch (e2) {
-        throw new Error('Failed to load TDB+ native binding. Be sure to run "cargo build" in rust-core.');
+        throw new Error('Failed to load LumaDB native binding. Be sure to run "cargo build" in rust-core.');
     }
 }
 

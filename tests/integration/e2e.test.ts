@@ -7,7 +7,7 @@ describe('E2E Native Tests', () => {
 
         // 1. Initialize Native DB
         console.log('Opening Database...');
-        const db = await Database.open('./tdb_test_data_e2e');
+        const db = await Database.open('./luma_test_data_e2e');
 
         // 2. Create Collection
         const users = db.collection('users');

@@ -1,5 +1,5 @@
 /**
- * TDB+ Type Definitions
+ * LumaDB Type Definitions
  */
 
 // ============================================================================
@@ -49,7 +49,7 @@ export interface QueryPlanStep {
 // Query Types
 // ============================================================================
 
-export type QueryLanguage = 'tql' | 'nql' | 'jql';
+export type QueryLanguage = 'lql' | 'nql' | 'jql';
 
 export interface ParsedQuery {
   type: QueryType;
@@ -292,53 +292,53 @@ export type EventHandler = (payload: EventPayload) => void;
 // Error Types
 // ============================================================================
 
-export class TDBError extends Error {
+export class LumaError extends Error {
   constructor(
     message: string,
     public code: string,
     public details?: any
   ) {
     super(message);
-    this.name = 'TDBError';
+    this.name = 'LumaError';
   }
 }
 
-export class QuerySyntaxError extends TDBError {
+export class QuerySyntaxError extends LumaError {
   constructor(message: string, public position?: number, public suggestion?: string) {
     super(message, 'QUERY_SYNTAX_ERROR', { position, suggestion });
     this.name = 'QuerySyntaxError';
   }
 }
 
-export class DocumentNotFoundError extends TDBError {
+export class DocumentNotFoundError extends LumaError {
   constructor(collection: string, id: DocumentId) {
     super(`Document not found: ${id} in collection ${collection}`, 'DOCUMENT_NOT_FOUND');
     this.name = 'DocumentNotFoundError';
   }
 }
 
-export class CollectionNotFoundError extends TDBError {
+export class CollectionNotFoundError extends LumaError {
   constructor(collection: string) {
     super(`Collection not found: ${collection}`, 'COLLECTION_NOT_FOUND');
     this.name = 'CollectionNotFoundError';
   }
 }
 
-export class TransactionError extends TDBError {
+export class TransactionError extends LumaError {
   constructor(message: string, transactionId?: string) {
     super(message, 'TRANSACTION_ERROR', { transactionId });
     this.name = 'TransactionError';
   }
 }
 
-export class IndexError extends TDBError {
+export class IndexError extends LumaError {
   constructor(message: string, indexName?: string) {
     super(message, 'INDEX_ERROR', { indexName });
     this.name = 'IndexError';
   }
 }
 
-export class ValidationError extends TDBError {
+export class ValidationError extends LumaError {
   constructor(message: string, field?: string) {
     super(message, 'VALIDATION_ERROR', { field });
     this.name = 'ValidationError';

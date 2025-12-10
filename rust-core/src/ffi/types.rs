@@ -6,7 +6,8 @@ use std::ffi::c_char;
 
 /// Query options for find operations
 #[repr(C)]
-pub struct TdbQueryOptions {
+#[allow(dead_code)]
+pub struct LumaQueryOptions {
     pub limit: i32,
     pub offset: i32,
     pub order_by: *const c_char,
@@ -15,14 +16,16 @@ pub struct TdbQueryOptions {
 
 /// Index options
 #[repr(C)]
-pub struct TdbIndexOptions {
+#[allow(dead_code)]
+pub struct LumaIndexOptions {
     pub unique: bool,
     pub sparse: bool,
 }
 
 /// Transaction options
 #[repr(C)]
-pub struct TdbTransactionOptions {
+#[allow(dead_code)]
+pub struct LumaTransactionOptions {
     pub timeout_ms: u32,
     pub read_only: bool,
 }

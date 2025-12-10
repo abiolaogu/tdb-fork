@@ -5,7 +5,7 @@ use parking_lot::RwLock;
 use dashmap::DashMap;
 
 use crate::types::{Document, DocumentId, Value};
-use crate::error::{Result, TdbError};
+use crate::error::{Result, LumaError};
 use crate::shard::ShardManager;
 use crate::wal::WriteAheadLog;
 

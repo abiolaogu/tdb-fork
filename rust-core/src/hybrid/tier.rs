@@ -18,7 +18,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 
-use crate::error::{TdbError, Result as TdbResult};
+use crate::error::{LumaError, Result as LumaResult};
 use super::StorageTier;
 
 // =============================================================================
@@ -53,7 +53,7 @@ unsafe impl Send for MemoryRegion {}
 unsafe impl Sync for MemoryRegion {}
 
 impl RamStore {
-    pub fn new(capacity: usize, huge_pages: bool, numa_node: i32) -> TdbResult<Self> {
+    pub fn new(capacity: usize, huge_pages: bool, numa_node: i32) -> LumaResult<Self> {
         let numa_nodes = Self::detect_numa_nodes();
         let regions = Self::allocate_regions(capacity, numa_nodes, huge_pages)?;
 
@@ -87,7 +87,7 @@ impl RamStore {
         total_capacity: usize,
         numa_nodes: usize,
         huge_pages: bool,
-    ) -> TdbResult<Vec<MemoryRegion>> {
+    ) -> LumaResult<Vec<MemoryRegion>> {
         let region_size = total_capacity / numa_nodes;
         let mut regions = Vec::with_capacity(numa_nodes);
 
@@ -99,7 +99,7 @@ impl RamStore {
         Ok(regions)
     }
 
-    fn allocate_region(size: usize, huge_pages: bool) -> TdbResult<MemoryRegion> {
+    fn allocate_region(size: usize, huge_pages: bool) -> LumaResult<MemoryRegion> {
         let alignment = if huge_pages {
             2 * 1024 * 1024 // 2MB huge pages
         } else {
@@ -107,12 +107,12 @@ impl RamStore {
         };
 
         let layout = Layout::from_size_align(size, alignment)
-            .map_err(|e| TdbError::Memory(format!("Invalid layout: {}", e)))?;
+            .map_err(|e| LumaError::Memory(format!("Invalid layout: {}", e)))?;
 
         let ptr = unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
-                return Err(TdbError::Memory("Failed to allocate memory".into()));
+                return Err(LumaError::Memory("Failed to allocate memory".into()));
             }
 
             // Zero memory
@@ -135,14 +135,14 @@ impl RamStore {
     }
 
     /// Write data and return offset
-    pub fn write(&self, data: &[u8]) -> TdbResult<u64> {
+    pub fn write(&self, data: &[u8]) -> LumaResult<u64> {
         let size = data.len();
 
         // Atomic allocation of space
         let offset = self.write_offset.fetch_add(size as u64, Ordering::SeqCst);
 
         if offset as usize + size > self.capacity {
-            return Err(TdbError::Memory("RAM store full".into()));
+            return Err(LumaError::Memory("RAM store full".into()));
         }
 
         // Determine which region and local offset
@@ -248,9 +248,9 @@ struct WriteBuffer {
 }
 
 impl SsdStore {
-    pub async fn new(path: PathBuf, direct_io: bool) -> TdbResult<Self> {
+    pub async fn new(path: PathBuf, direct_io: bool) -> LumaResult<Self> {
         std::fs::create_dir_all(&path)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         let data_path = path.join("data.tdb");
 
@@ -264,7 +264,7 @@ impl SsdStore {
         }
 
         let file = options.open(&data_path)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         let file_size = file.metadata()
             .map(|m| m.len())
@@ -286,7 +286,7 @@ impl SsdStore {
         })
     }
 
-    pub async fn write(&self, data: &[u8]) -> TdbResult<u64> {
+    pub async fn write(&self, data: &[u8]) -> LumaResult<u64> {
         let mut buffer = self.write_buffer.lock();
 
         // Check if we need to flush
@@ -303,7 +303,7 @@ impl SsdStore {
         Ok(offset)
     }
 
-    pub async fn read(&self, offset: u64, size: u32) -> TdbResult<Vec<u8>> {
+    pub async fn read(&self, offset: u64, size: u32) -> LumaResult<Vec<u8>> {
         // Check if data is in write buffer
         {
             let buffer = self.write_buffer.lock();
@@ -328,7 +328,7 @@ impl SsdStore {
         };
 
         file.seek(SeekFrom::Start(aligned_offset))
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         // Read aligned size for direct I/O
         let read_size = if self.direct_io {
@@ -340,7 +340,7 @@ impl SsdStore {
 
         let mut data = vec![0u8; read_size];
         file.read_exact(&mut data)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         // Extract actual data
         if self.direct_io {
@@ -350,7 +350,7 @@ impl SsdStore {
         }
     }
 
-    pub fn sync(&self) -> TdbResult<()> {
+    pub fn sync(&self) -> LumaResult<()> {
         // Flush buffer first
         {
             let mut buffer = self.write_buffer.lock();
@@ -359,10 +359,10 @@ impl SsdStore {
 
         // Sync file
         self.file.lock().sync_all()
-            .map_err(|e| TdbError::Io(e))
+            .map_err(|e| LumaError::Io(e))
     }
 
-    fn flush_buffer(&self, buffer: &mut WriteBuffer) -> TdbResult<()> {
+    fn flush_buffer(&self, buffer: &mut WriteBuffer) -> LumaResult<()> {
         if buffer.data.is_empty() {
             return Ok(());
         }
@@ -370,7 +370,7 @@ impl SsdStore {
         let mut file = self.file.lock();
 
         file.seek(SeekFrom::Start(buffer.offset))
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         // Pad to alignment for direct I/O
         let write_data = if self.direct_io && buffer.data.len() % 4096 != 0 {
@@ -383,7 +383,7 @@ impl SsdStore {
         };
 
         file.write_all(&write_data)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         // Reset buffer
         buffer.offset = buffer.offset + buffer.data.len() as u64;
@@ -407,9 +407,9 @@ pub struct HddStore {
 }
 
 impl HddStore {
-    pub async fn new(path: PathBuf) -> TdbResult<Self> {
+    pub async fn new(path: PathBuf) -> LumaResult<Self> {
         std::fs::create_dir_all(&path)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         let data_path = path.join("cold_data.tdb");
 
@@ -418,7 +418,7 @@ impl HddStore {
             .read(true)
             .write(true)
             .open(&data_path)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         let file_size = file.metadata()
             .map(|m| m.len())
@@ -433,7 +433,7 @@ impl HddStore {
         })
     }
 
-    pub async fn write(&self, data: &[u8]) -> TdbResult<u64> {
+    pub async fn write(&self, data: &[u8]) -> LumaResult<u64> {
         let mut buffer = self.write_buffer.lock();
 
         if buffer.len() + data.len() > self.buffer_size {
@@ -446,29 +446,29 @@ impl HddStore {
         Ok(offset)
     }
 
-    pub async fn read(&self, offset: u64, size: u32) -> TdbResult<Vec<u8>> {
+    pub async fn read(&self, offset: u64, size: u32) -> LumaResult<Vec<u8>> {
         let mut file = self.file.lock();
 
         file.seek(SeekFrom::Start(offset))
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         let mut data = vec![0u8; size as usize];
         file.read_exact(&mut data)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         Ok(data)
     }
 
-    fn flush_buffer(&self, buffer: &mut Vec<u8>) -> TdbResult<()> {
+    fn flush_buffer(&self, buffer: &mut Vec<u8>) -> LumaResult<()> {
         if buffer.is_empty() {
             return Ok(());
         }
 
         let mut file = self.file.lock();
         file.seek(SeekFrom::End(0))
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
         file.write_all(buffer)
-            .map_err(|e| TdbError::Io(e))?;
+            .map_err(|e| LumaError::Io(e))?;
 
         buffer.clear();
         Ok(())

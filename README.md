@@ -1,4 +1,4 @@
-# TDB+ (Turbo Database Plus)
+# LumaDB (Luma Database Plus)
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-2.0.0-blue.svg" alt="Version">
@@ -8,13 +8,13 @@
   <img src="https://img.shields.io/badge/python-3.11+-3776AB.svg" alt="Python">
 </p>
 
-**TDB+** is a high-performance, distributed database with AI-native capabilities. Built with a multi-language architecture combining **Rust** for speed, **Go** for scalability, and **Python** for AI integration. Features **three intuitive query languages** making database operations accessible to everyone.
+**LumaDB** is a high-performance, distributed database with AI-native capabilities. Built with a multi-language architecture combining **Rust** for speed, **Go** for scalability, and **Python** for AI integration. Features **three intuitive query languages** making database operations accessible to everyone.
 
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        TDB+ Architecture                             │
+│                        LumaDB Architecture                             │
 ├─────────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
 │  │   TypeScript    │  │    Python AI    │  │   Go Cluster    │     │
@@ -39,7 +39,7 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Why TDB+?
+## Why LumaDB?
 
 ### Hybrid Memory Architecture (Aerospike-style)
 - **RAM + SSD**: Hot data in RAM, warm data on SSD, cold data on HDD
@@ -75,10 +75,10 @@
 - **Vector Search**: FAISS-powered semantic similarity search
 - **Embeddings**: Built-in text embedding generation
 - **Natural Language Queries**: Ask questions in plain English
-- **Query Translation**: AI converts natural language to TQL/JQL
+- **Query Translation**: AI converts natural language to LQL/JQL
 
 ### Developer Experience
-- **Three Query Languages**: TQL (SQL-like), NQL (Natural), JQL (JSON)
+- **Three Query Languages**: LQL (SQL-like), NQL (Natural), JQL (JSON)
 - **TypeScript SDK**: Full type safety and IntelliSense
 - **Interactive CLI**: Syntax highlighting and auto-completion
 - **Excellent Errors**: Clear, actionable error messages
@@ -87,7 +87,7 @@
 - **Safe Execution**: Sandboxed scripting environment
 - **Custom Logic**: Write stored procedures and triggers in Rhai
 - **High Performance**: Compiled scripts for fast execution
-- **Integration**: Direct access to TDB+ document types and collections
+- **Integration**: Direct access to LumaDB document types and collections
 
 ## Quick Start
 
@@ -109,9 +109,9 @@ import { Database } from 'tdb-plus';
 const db = Database.create('my_app');
 await db.open();
 
-// TQL (SQL-like) - for SQL developers
-await db.tql(`INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 28)`);
-const users = await db.tql(`SELECT * FROM users WHERE age > 21`);
+// LQL (SQL-like) - for SQL developers
+await db.lql(`INSERT INTO users (name, email, age) VALUES ('Alice', 'alice@example.com', 28)`);
+const users = await db.lql(`SELECT * FROM users WHERE age > 21`);
 
 // NQL (Natural Language) - for beginners
 await db.nql(`add to users name "Bob", email "bob@example.com", age 32`);
@@ -126,7 +126,7 @@ await db.close();
 
 ## Three Query Languages
 
-### TQL (TDB Query Language) - SQL-Like
+### LQL (TDB Query Language) - SQL-Like
 
 ```sql
 -- CRUD Operations
@@ -188,7 +188,7 @@ const results = await db.ai.search('products', {
 ### Natural Language to Query
 
 ```typescript
-// AI translates natural language to TQL
+// AI translates natural language to LQL
 const query = await db.ai.translate(
   'show me all orders from last week that cost more than $100'
 );
@@ -350,7 +350,7 @@ tdb-fork/
 │
 ├── src/                    # TypeScript SDK & CLI
 │   ├── core/               # Database, Collection, Document
-│   ├── parsers/            # TQL, NQL, JQL parsers
+│   ├── parsers/            # LQL, NQL, JQL parsers
 │   ├── storage/            # Memory & File storage
 │   └── cli/                # REPL interface
 │
@@ -411,7 +411,7 @@ npm test
 |--------|-------------|
 | `open()` | Open database connection |
 | `close()` | Close connection |
-| `tql(query)` | Execute TQL query |
+| `lql(query)` | Execute LQL query |
 | `nql(query)` | Execute NQL query |
 | `jql(query)` | Execute JQL query |
 | `collection(name)` | Get collection |
@@ -433,7 +433,7 @@ npm test
 
 ## Comparison
 
-| Feature | TDB+ | ScyllaDB | DragonflyDB | MongoDB |
+| Feature | LumaDB | ScyllaDB | DragonflyDB | MongoDB |
 |---------|------|----------|-------------|---------|
 | Query Languages | 3 | 1 (CQL) | 1 (Redis) | 1 |
 | AI/Vector Search | Native | No | No | Atlas |

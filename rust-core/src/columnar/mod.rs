@@ -18,7 +18,7 @@ use std::collections::HashMap;
 
 use parking_lot::RwLock;
 
-use crate::error::{TdbError, Result as TdbResult};
+use crate::error::{LumaError, Result as LumaResult};
 
 /// Column data types
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -345,23 +345,23 @@ impl ColumnarTable {
     }
 
     /// Execute vectorized operation across columns
-    pub fn apply_simd<F>(&self, col_name: &str, f: F) -> TdbResult<Vec<f64>>
+    pub fn apply_simd<F>(&self, col_name: &str, f: F) -> LumaResult<Vec<f64>>
     where
         F: Fn(&[f64]) -> Vec<f64>,
     {
         let col = self.column(col_name)
-            .ok_or(TdbError::NotFound(format!("Column {}", col_name)))?;
+            .ok_or(LumaError::NotFound(format!("Column {}", col_name)))?;
 
         let slice = col.as_f64_slice()
-            .ok_or(TdbError::InvalidArgument("Column is not f64".into()))?;
+            .ok_or(LumaError::InvalidArgument("Column is not f64".into()))?;
 
         Ok(f(slice))
     }
 
     /// SIMD sum
-    pub fn sum(&self, col_name: &str) -> TdbResult<f64> {
+    pub fn sum(&self, col_name: &str) -> LumaResult<f64> {
         let col = self.column(col_name)
-            .ok_or(TdbError::NotFound(format!("Column {}", col_name)))?;
+            .ok_or(LumaError::NotFound(format!("Column {}", col_name)))?;
 
         match col.dtype {
             ColumnType::Float64 => {
@@ -372,14 +372,14 @@ impl ColumnarTable {
                 let slice = col.as_i64_slice().unwrap();
                 Ok(simd::sum_i64(slice) as f64)
             }
-            _ => Err(TdbError::InvalidArgument("Column is not numeric".into())),
+            _ => Err(LumaError::InvalidArgument("Column is not numeric".into())),
         }
     }
 
     /// SIMD average
-    pub fn avg(&self, col_name: &str) -> TdbResult<f64> {
+    pub fn avg(&self, col_name: &str) -> LumaResult<f64> {
         let col = self.column(col_name)
-            .ok_or(TdbError::NotFound(format!("Column {}", col_name)))?;
+            .ok_or(LumaError::NotFound(format!("Column {}", col_name)))?;
 
         match col.dtype {
             ColumnType::Float64 => {
@@ -390,17 +390,17 @@ impl ColumnarTable {
                 let slice = col.as_i64_slice().unwrap();
                 Ok(simd::sum_i64(slice) as f64 / slice.len() as f64)
             }
-            _ => Err(TdbError::InvalidArgument("Column is not numeric".into())),
+            _ => Err(LumaError::InvalidArgument("Column is not numeric".into())),
         }
     }
 
     /// SIMD filter
-    pub fn filter_gt(&self, col_name: &str, threshold: f64) -> TdbResult<Vec<usize>> {
+    pub fn filter_gt(&self, col_name: &str, threshold: f64) -> LumaResult<Vec<usize>> {
         let col = self.column(col_name)
-            .ok_or(TdbError::NotFound(format!("Column {}", col_name)))?;
+            .ok_or(LumaError::NotFound(format!("Column {}", col_name)))?;
 
         let slice = col.as_f64_slice()
-            .ok_or(TdbError::InvalidArgument("Column is not f64".into()))?;
+            .ok_or(LumaError::InvalidArgument("Column is not f64".into()))?;
 
         Ok(simd::filter_gt_f64(slice, threshold))
     }

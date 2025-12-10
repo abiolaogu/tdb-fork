@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use memmap2::Mmap;
 
 use crate::types::{KeyValue, Compression};
-use crate::error::{Result, TdbError};
+use crate::error::{Result, LumaError};
 
 /// SSTable file format:
 /// [Header] [Data Blocks] [Index Block] [Bloom Filter] [Footer]
@@ -116,12 +116,12 @@ impl SSTable {
     }
 
     fn read_block(&self, offset: u64, size: u32) -> Result<Vec<u8>> {
-        let mmap = self.mmap.as_ref().ok_or(TdbError::FileNotFound("mmap".into()))?;
+        let mmap = self.mmap.as_ref().ok_or(LumaError::FileNotFound("mmap".into()))?;
         let start = offset as usize;
         let end = start + size as usize;
 
         if end > mmap.len() {
-            return Err(TdbError::Corruption("block extends past file".into()));
+            return Err(LumaError::Corruption("block extends past file".into()));
         }
 
         Ok(mmap[start..end].to_vec())
@@ -129,7 +129,7 @@ impl SSTable {
 
     fn read_footer(mmap: &Mmap) -> Result<Footer> {
         if mmap.len() < 48 {
-            return Err(TdbError::Corruption("file too small".into()));
+            return Err(LumaError::Corruption("file too small".into()));
         }
 
         let footer_start = mmap.len() - 48;
@@ -150,7 +150,7 @@ impl SSTable {
         let end = start + size as usize;
 
         if end > mmap.len() {
-            return Err(TdbError::Corruption("index extends past file".into()));
+            return Err(LumaError::Corruption("index extends past file".into()));
         }
 
         let data = &mmap[start..end];

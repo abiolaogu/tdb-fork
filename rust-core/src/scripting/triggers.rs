@@ -15,6 +15,7 @@ pub enum TriggerEvent {
 }
 
 pub struct Triggers {
+    #[allow(dead_code)]
     engine: Arc<ScriptingEngine>,
     // Map: Collection -> Event -> List of Script Names
     hooks: DashMap<String, DashMap<TriggerEvent, Vec<String>>>,
@@ -36,10 +37,10 @@ impl Triggers {
         }
     }
 
-    pub fn on_event(&self, collection: &str, event: TriggerEvent, doc: &mut Document) -> Result<()> {
+    pub fn on_event(&self, collection: &str, event: TriggerEvent, _doc: &mut Document) -> Result<()> {
         if let Some(col_hooks) = self.hooks.get(collection) {
              if let Some(scripts) = col_hooks.get(&event) {
-                 for script_name in scripts.iter() {
+                 for _script_name in scripts.iter() {
                      // In a real implementation, we would pass the document as an argument
                      // and potentially allow the script to modify it (for Before* events).
                      // For now, we just execute the script/function.

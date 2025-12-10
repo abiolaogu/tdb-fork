@@ -1,12 +1,12 @@
 /**
- * TDB+ Query Engine
+ * LumaDB Query Engine
  *
  * Unified query execution engine that supports multiple query languages.
  * Provides query optimization, plan generation, and execution.
  */
 
 import { Database } from '../core/Database';
-import { TQLParser } from './parsers/TQLParser';
+import { LQLParser } from './parsers/LQLParser';
 import { NQLParser } from './parsers/NQLParser';
 import { JQLParser } from './parsers/JQLParser';
 import {
@@ -23,7 +23,7 @@ import {
 
 export class QueryEngine {
   private database: Database;
-  private tqlParser: TQLParser;
+  private lqlParser: LQLParser;
   private nqlParser: NQLParser;
   private jqlParser: JQLParser;
   private queryCache: Map<string, ParsedQuery>;
@@ -31,7 +31,7 @@ export class QueryEngine {
 
   constructor(database: Database) {
     this.database = database;
-    this.tqlParser = new TQLParser();
+    this.lqlParser = new LQLParser();
     this.nqlParser = new NQLParser();
     this.jqlParser = new JQLParser();
     this.queryCache = new Map();
@@ -127,8 +127,8 @@ export class QueryEngine {
     let parsed: ParsedQuery;
 
     switch (language) {
-      case 'tql':
-        parsed = this.tqlParser.parse(queryString);
+      case 'lql':
+        parsed = this.lqlParser.parse(queryString);
         break;
       case 'nql':
         parsed = this.nqlParser.parse(queryString);

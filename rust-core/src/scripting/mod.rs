@@ -39,18 +39,18 @@ impl ScriptingEngine {
 
     pub fn compile(&self, script: &str) -> Result<AST> {
         self.engine.compile(script)
-            .map_err(|e| crate::error::TdbError::Internal(format!("Script compilation error: {}", e)))
+            .map_err(|e| crate::error::LumaError::Internal(format!("Script compilation error: {}", e)))
     }
 
     pub fn call_fn(&self, ast: &AST, name: &str, args: impl rhai::FuncArgs) -> Result<Dynamic> {
         let mut scope = Scope::new();
         self.engine.call_fn(&mut scope, ast, name, args)
-            .map_err(|e| crate::error::TdbError::Internal(format!("Script execution error: {}", e)))
+            .map_err(|e| crate::error::LumaError::Internal(format!("Script execution error: {}", e)))
     }
 
     pub fn eval(&self, script: &str) -> Result<Dynamic> {
         self.engine.eval(script)
-            .map_err(|e| crate::error::TdbError::Internal(format!("Script evaluation error: {}", e)))
+            .map_err(|e| crate::error::LumaError::Internal(format!("Script evaluation error: {}", e)))
     }
 }
 

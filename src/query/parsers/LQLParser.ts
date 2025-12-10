@@ -1,5 +1,5 @@
 /**
- * TDB+ TQL Parser (TDB Query Language)
+ * TDB+ LQL Parser (TDB Query Language)
  *
  * SQL-like query language for users familiar with traditional databases.
  * Designed to be intuitive and easy to learn.
@@ -28,7 +28,7 @@ interface Token {
   position: number;
 }
 
-export class TQLParser {
+export class LQLParser {
   private tokens: Token[];
   private position: number;
   private input: string;
@@ -40,7 +40,7 @@ export class TQLParser {
   }
 
   /**
-   * Parse a TQL query string
+   * Parse a LQL query string
    */
   parse(query: string): ParsedQuery {
     this.input = query.trim();

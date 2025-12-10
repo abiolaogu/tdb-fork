@@ -12,14 +12,14 @@ use std::sync::Arc;
 
 use crate::Database;
 use crate::config::Config;
-use crate::error::TdbError;
+use crate::error::LumaError;
 use crate::types::Document;
 
 use handles::{HandleMap, ENGINES};
 
 /// Result code for FFI operations
 #[repr(C)]
-pub enum TdbResult {
+pub enum LumaResult {
     Ok = 0,
     ErrInvalidHandle = -1,
     ErrInvalidArgument = -2,
@@ -31,37 +31,37 @@ pub enum TdbResult {
     ErrInternal = -8,
 }
 
-impl From<TdbError> for TdbResult {
-    fn from(err: TdbError) -> Self {
+impl From<LumaError> for LumaResult {
+    fn from(err: LumaError) -> Self {
         match err {
-            TdbError::DocumentNotFound(_) | TdbError::CollectionNotFound(_) => TdbResult::ErrNotFound,
-            TdbError::DocumentExists(_) => TdbResult::ErrAlreadyExists,
-            TdbError::Io(_) => TdbResult::ErrIO,
-            TdbError::Corruption(_) => TdbResult::ErrCorruption,
-            TdbError::MemoryLimitExceeded { .. } => TdbResult::ErrFull,
-            _ => TdbResult::ErrInternal,
+            LumaError::DocumentNotFound(_) | LumaError::CollectionNotFound(_) => LumaResult::ErrNotFound,
+            LumaError::DocumentExists(_) => LumaResult::ErrAlreadyExists,
+            LumaError::Io(_) => LumaResult::ErrIO,
+            LumaError::Corruption(_) => LumaResult::ErrCorruption,
+            LumaError::MemoryLimitExceeded { .. } => LumaResult::ErrFull,
+            _ => LumaResult::ErrInternal,
         }
     }
 }
 
 /// Opaque handle to a database engine
-pub type TdbHandle = u64;
+pub type LumaHandle = u64;
 
 /// Buffer for returning data to callers
 #[repr(C)]
-pub struct TdbBuffer {
+pub struct LumaBuffer {
     data: *mut u8,
     len: usize,
     capacity: usize,
 }
 
-impl TdbBuffer {
+impl LumaBuffer {
     fn new(data: Vec<u8>) -> Self {
         let mut data = data.into_boxed_slice();
         let ptr = data.as_mut_ptr();
         let len = data.len();
         std::mem::forget(data);
-        TdbBuffer {
+        LumaBuffer {
             data: ptr,
             len,
             capacity: len,
@@ -69,7 +69,7 @@ impl TdbBuffer {
     }
 
     fn empty() -> Self {
-        TdbBuffer {
+        LumaBuffer {
             data: ptr::null_mut(),
             len: 0,
             capacity: 0,
@@ -86,18 +86,18 @@ impl TdbBuffer {
 /// # Safety
 /// The path must be a valid null-terminated C string.
 #[no_mangle]
-pub unsafe extern "C" fn tdb_open(
+pub unsafe extern "C" fn luma_open(
     path: *const c_char,
     config_json: *const c_char,
-    handle_out: *mut TdbHandle,
-) -> TdbResult {
+    handle_out: *mut LumaHandle,
+) -> LumaResult {
     if path.is_null() || handle_out.is_null() {
-        return TdbResult::ErrInvalidArgument;
+        return LumaResult::ErrInvalidArgument;
     }
 
-    let path_str = match CStr::from_ptr(path).to_str() {
+    let _name_str = match unsafe { CStr::from_ptr(path).to_str() } {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     // Parse config if provided
@@ -111,14 +111,14 @@ pub unsafe extern "C" fn tdb_open(
         }
     } else {
         let mut cfg = Config::default();
-        cfg.data_dir = path_str.into();
+        cfg.data_dir = _name_str.into();
         cfg
     };
 
     // Create the storage engine
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     let engine = match rt.block_on(Database::open(config)) {
@@ -130,7 +130,7 @@ pub unsafe extern "C" fn tdb_open(
     let handle = ENGINES.get_or_init(HandleMap::new).insert(Arc::new(engine));
     *handle_out = handle;
 
-    TdbResult::Ok
+    LumaResult::Ok
 }
 
 /// Close a database and release resources
@@ -138,13 +138,13 @@ pub unsafe extern "C" fn tdb_open(
 /// # Safety
 /// The handle must be a valid database handle.
 #[no_mangle]
-pub unsafe extern "C" fn tdb_close(handle: TdbHandle) -> TdbResult {
+pub unsafe extern "C" fn luma_close(handle: LumaHandle) -> LumaResult {
     if let Some(map) = ENGINES.get() {
         if map.remove(handle).is_some() {
-            return TdbResult::Ok;
+            return LumaResult::Ok;
         }
     }
-    TdbResult::ErrInvalidHandle
+    LumaResult::ErrInvalidHandle
 }
 
 // ============================================================================
@@ -153,60 +153,60 @@ pub unsafe extern "C" fn tdb_close(handle: TdbHandle) -> TdbResult {
 
 /// Create a collection
 #[no_mangle]
-pub unsafe extern "C" fn tdb_create_collection(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_create_collection(
+    handle: LumaHandle,
     name: *const c_char,
-) -> TdbResult {
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let name_str = match CStr::from_ptr(name).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     match rt.block_on(async {
         let _ = engine.collection(name_str);
-        Ok::<(), TdbError>(())
+        Ok::<(), LumaError>(())
     }) {
-        Ok(_) => TdbResult::Ok,
+        Ok(_) => LumaResult::Ok,
         Err(e) => e.into(),
     }
 }
 
 /// Drop a collection
 #[no_mangle]
-pub unsafe extern "C" fn tdb_drop_collection(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_drop_collection(
+    handle: LumaHandle,
     name: *const c_char,
-) -> TdbResult {
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
-    let name_str = match CStr::from_ptr(name).to_str() {
+    let _name_str = match CStr::from_ptr(name).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     match rt.block_on(async {
         // Drop not supported yet
-        Ok::<(), TdbError>(())
+        Ok::<(), LumaError>(())
     }) {
-        Ok(_) => TdbResult::Ok,
+        Ok(_) => LumaResult::Ok,
         Err(e) => e.into(),
     }
 }
@@ -220,31 +220,31 @@ pub unsafe extern "C" fn tdb_drop_collection(
 /// # Safety
 /// All pointers must be valid. The document must be valid JSON.
 #[no_mangle]
-pub unsafe extern "C" fn tdb_insert(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_insert(
+    handle: LumaHandle,
     collection: *const c_char,
     document_json: *const c_char,
-    id_out: *mut TdbBuffer,
-) -> TdbResult {
+    id_out: *mut LumaBuffer,
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let doc_str = match CStr::from_ptr(document_json).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     // Parse data map
     let mut data: std::collections::HashMap<String, crate::types::Value> = match serde_json::from_str(doc_str) {
         Ok(d) => d,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     // Extract ID if present
@@ -259,15 +259,15 @@ pub unsafe extern "C" fn tdb_insert(
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     match rt.block_on(engine.insert(collection_str, doc)) {
         Ok(id) => {
             if !id_out.is_null() {
-                *id_out = TdbBuffer::new(id.into_bytes());
+                *id_out = LumaBuffer::new(id.into_bytes());
             }
-            TdbResult::Ok
+            LumaResult::Ok
         }
         Err(e) => e.into(),
     }
@@ -278,40 +278,40 @@ pub unsafe extern "C" fn tdb_insert(
 /// # Safety
 /// input_data must be a valid pointer of length input_len.
 #[no_mangle]
-pub unsafe extern "C" fn tdb_insert_mp(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_insert_mp(
+    handle: LumaHandle,
     collection: *const c_char,
     input_data: *const u8,
     input_len: usize,
-    id_out: *mut TdbBuffer,
-) -> TdbResult {
+    id_out: *mut LumaBuffer,
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let slice = std::slice::from_raw_parts(input_data, input_len);
     let doc: crate::types::Document = match rmp_serde::from_slice(slice) {
         Ok(d) => d,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     match rt.block_on(engine.insert(collection_str, doc)) {
         Ok(id) => {
             if !id_out.is_null() {
-                *id_out = TdbBuffer::new(id.into_bytes());
+                *id_out = LumaBuffer::new(id.into_bytes());
             }
-            TdbResult::Ok
+            LumaResult::Ok
         }
         Err(e) => e.into(),
     }
@@ -319,30 +319,30 @@ pub unsafe extern "C" fn tdb_insert_mp(
 
 /// Get a document by ID
 #[no_mangle]
-pub unsafe extern "C" fn tdb_get(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_get(
+    handle: LumaHandle,
     collection: *const c_char,
     id: *const c_char,
-    document_out: *mut TdbBuffer,
-) -> TdbResult {
+    document_out: *mut LumaBuffer,
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let id_str = match CStr::from_ptr(id).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     let id_string = id_str.to_string();
@@ -350,94 +350,94 @@ pub unsafe extern "C" fn tdb_get(
         Ok(Some(doc)) => {
             if !document_out.is_null() {
                 let json = serde_json::to_vec(&doc).unwrap_or_default();
-                *document_out = TdbBuffer::new(json);
+                *document_out = LumaBuffer::new(json);
             }
-            TdbResult::Ok
+            LumaResult::Ok
         }
-        Ok(None) => TdbResult::ErrNotFound,
+        Ok(None) => LumaResult::ErrNotFound,
         Err(e) => e.into(),
     }
 }
 
 /// Update a document by ID
 #[no_mangle]
-pub unsafe extern "C" fn tdb_update(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_update(
+    handle: LumaHandle,
     collection: *const c_char,
     id: *const c_char,
     updates_json: *const c_char,
-) -> TdbResult {
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let id_str = match CStr::from_ptr(id).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let updates_str = match CStr::from_ptr(updates_json).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let updates: serde_json::Value = match serde_json::from_str(updates_str) {
         Ok(u) => u,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     let id_string = id_str.to_string();
     let doc_struct: Document = match serde_json::from_value(updates) {
         Ok(d) => d,
-        Err(e) => return TdbError::from(e).into(),
+        Err(e) => return LumaError::from(e).into(),
     };
     match rt.block_on(engine.update(collection_str, &id_string, doc_struct)) {
-        Ok(_) => TdbResult::Ok,
+        Ok(_) => LumaResult::Ok,
         Err(e) => e.into(),
     }
 }
 
 /// Delete a document by ID
 #[no_mangle]
-pub unsafe extern "C" fn tdb_delete(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_delete(
+    handle: LumaHandle,
     collection: *const c_char,
     id: *const c_char,
-) -> TdbResult {
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let id_str = match CStr::from_ptr(id).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     let id_string = id_str.to_string();
     match rt.block_on(engine.delete(collection_str, &id_string)) {
-        Ok(_) => TdbResult::Ok,
+        Ok(_) => LumaResult::Ok,
         Err(e) => e.into(),
     }
 }
@@ -448,38 +448,33 @@ pub unsafe extern "C" fn tdb_delete(
 
 /// Execute a query and return results
 #[no_mangle]
-pub unsafe extern "C" fn tdb_query(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_query(
+    handle: LumaHandle,
     collection: *const c_char,
     query_json: *const c_char,
-    results_out: *mut TdbBuffer,
-) -> TdbResult {
+    results_out: *mut LumaBuffer,
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
-    };
-
-    let query_str = match CStr::from_ptr(query_json).to_str() {
-        Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     match rt.block_on(engine.scan(collection_str, |_| true)) {
         Ok(_) => {
              // Mock empty result
              let json = b"[]".to_vec();
-             *results_out = TdbBuffer::new(json);
-             TdbResult::Ok
+             *results_out = LumaBuffer::new(json);
+             LumaResult::Ok
         },
         Err(e) => e.into(),
     }
@@ -491,35 +486,35 @@ pub unsafe extern "C" fn tdb_query(
 
 /// Insert multiple documents in a single batch
 #[no_mangle]
-pub unsafe extern "C" fn tdb_batch_insert(
-    handle: TdbHandle,
+pub unsafe extern "C" fn luma_batch_insert(
+    handle: LumaHandle,
     collection: *const c_char,
     documents_json: *const c_char,
     count_out: *mut usize,
-) -> TdbResult {
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let collection_str = match CStr::from_ptr(collection).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let docs_str = match CStr::from_ptr(documents_json).to_str() {
         Ok(s) => s,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let docs: Vec<serde_json::Value> = match serde_json::from_str(docs_str) {
         Ok(d) => d,
-        Err(_) => return TdbResult::ErrInvalidArgument,
+        Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     let docs_struct: Vec<Document> = docs.into_iter().filter_map(|v| serde_json::from_value(v).ok()).collect();
@@ -527,7 +522,7 @@ pub unsafe extern "C" fn tdb_batch_insert(
         Ok(ids) => {
             let count = ids.len();
             *count_out = count;
-            TdbResult::Ok
+            LumaResult::Ok
         }
         Err(e) => e.into(),
     }
@@ -539,7 +534,7 @@ pub unsafe extern "C" fn tdb_batch_insert(
 
 /// Free a buffer returned by TDB functions
 #[no_mangle]
-pub unsafe extern "C" fn tdb_buffer_free(buffer: *mut TdbBuffer) {
+pub unsafe extern "C" fn luma_buffer_free(buffer: *mut LumaBuffer) {
     if !buffer.is_null() && !(*buffer).data.is_null() {
         let _ = Vec::from_raw_parts(
             (*buffer).data,
@@ -554,7 +549,7 @@ pub unsafe extern "C" fn tdb_buffer_free(buffer: *mut TdbBuffer) {
 
 /// Get the data pointer from a buffer
 #[no_mangle]
-pub unsafe extern "C" fn tdb_buffer_data(buffer: *const TdbBuffer) -> *const u8 {
+pub unsafe extern "C" fn luma_buffer_data(buffer: *const LumaBuffer) -> *const u8 {
     if buffer.is_null() {
         ptr::null()
     } else {
@@ -564,7 +559,7 @@ pub unsafe extern "C" fn tdb_buffer_data(buffer: *const TdbBuffer) -> *const u8 
 
 /// Get the length of a buffer
 #[no_mangle]
-pub unsafe extern "C" fn tdb_buffer_len(buffer: *const TdbBuffer) -> usize {
+pub unsafe extern "C" fn luma_buffer_len(buffer: *const LumaBuffer) -> usize {
     if buffer.is_null() {
         0
     } else {
@@ -578,28 +573,26 @@ pub unsafe extern "C" fn tdb_buffer_len(buffer: *const TdbBuffer) -> usize {
 
 /// Get database statistics as JSON
 #[no_mangle]
-pub unsafe extern "C" fn tdb_stats(
-    handle: TdbHandle,
-    stats_out: *mut TdbBuffer,
-) -> TdbResult {
+pub unsafe extern "C" fn luma_stats(
+    handle: LumaHandle,
+    stats_out: *mut LumaBuffer,
+) -> LumaResult {
     let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
         Some(e) => e,
-        None => return TdbResult::ErrInvalidHandle,
+        None => return LumaResult::ErrInvalidHandle,
     };
 
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
-        Err(_) => return TdbResult::ErrInternal,
+        Err(_) => return LumaResult::ErrInternal,
     };
 
     let stats = engine.stats();
     let json = serde_json::to_vec(&stats).unwrap_or_default();
 
     if !stats_out.is_null() {
-        *stats_out = TdbBuffer::new(json);
+        *stats_out = LumaBuffer::new(json);
     }
 
-    TdbResult::Ok
+    LumaResult::Ok
 }
-
-

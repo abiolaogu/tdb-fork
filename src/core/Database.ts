@@ -1,7 +1,7 @@
 /**
- * TDB+ Database - Main Database Class
+ * LumaDB - Main Database Class
  *
- * The primary entry point for interacting with TDB+.
+ * The primary entry point for interacting with LumaDB.
  * Supports multiple query languages and provides enterprise-grade features.
  */
 
@@ -23,7 +23,7 @@ import {
   EventHandler,
   EventPayload,
   CollectionNotFoundError,
-  TDBError,
+  LumaError,
   DocumentData,
 } from '../types';
 
@@ -46,7 +46,7 @@ export class Database {
     this.eventHandlers = new Map();
     this.activeTransactions = new Map();
     this.isOpen = false;
-    this.defaultQueryLanguage = config.defaultQueryLanguage || 'tql';
+    this.defaultQueryLanguage = config.defaultQueryLanguage || 'lql';
 
     // Initialize storage based on config
     this.storage = this.initializeStorage(config);
@@ -95,7 +95,7 @@ export class Database {
     }
 
     this.isOpen = true;
-    console.log(`TDB+ Database "${this.name}" opened successfully`);
+    console.log(`LumaDB Database "${this.name}" opened successfully`);
   }
 
   /**
@@ -123,7 +123,7 @@ export class Database {
 
     await this.storage.close();
     this.isOpen = false;
-    console.log(`TDB+ Database "${this.name}" closed`);
+    console.log(`LumaDB Database "${this.name}" closed`);
   }
 
   // ============================================================================
@@ -190,15 +190,15 @@ export class Database {
   }
 
   /**
-   * Execute a TQL (TDB Query Language) query - SQL-like syntax
+   * Execute a LQL (Luma Query Language) query - SQL-like syntax
    *
    * Examples:
    *   SELECT * FROM users WHERE age > 21
    *   INSERT INTO users (name, age) VALUES ('John', 25)
    *   UPDATE users SET status = 'active' WHERE id = '123'
    */
-  async tql<T = DocumentData>(queryString: string): Promise<QueryResult<T>> {
-    return this.queryWithLanguage<T>(queryString, 'tql');
+  async lql<T = DocumentData>(queryString: string): Promise<QueryResult<T>> {
+    return this.queryWithLanguage<T>(queryString, 'lql');
   }
 
   /**
@@ -408,7 +408,7 @@ export class Database {
 
   private ensureOpen(): void {
     if (!this.isOpen) {
-      throw new TDBError('Database is not open', 'DATABASE_NOT_OPEN');
+      throw new LumaError('Database is not open', 'DATABASE_NOT_OPEN');
     }
   }
 

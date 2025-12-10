@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use crate::error::{TdbError, Result as TdbResult};
+use crate::error::{LumaError, Result as LumaResult};
 
 /// io_uring configuration
 #[derive(Debug, Clone)]
@@ -154,7 +154,7 @@ pub struct UringStats {
 
 impl IoUring {
     /// Create a new io_uring instance
-    pub fn new(config: UringConfig) -> TdbResult<Self> {
+    pub fn new(config: UringConfig) -> LumaResult<Self> {
         // Allocate registered buffers
         let buffers = if config.registered_buffers {
             (0..config.num_buffers)
@@ -182,7 +182,7 @@ impl IoUring {
         fd: RawFd,
         offset: u64,
         len: usize,
-    ) -> TdbResult<u64> {
+    ) -> LumaResult<u64> {
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let buffer_idx = self.acquire_buffer()?;
 
@@ -204,7 +204,7 @@ impl IoUring {
         fd: RawFd,
         offset: u64,
         data: &[u8],
-    ) -> TdbResult<u64> {
+    ) -> LumaResult<u64> {
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let buffer_idx = self.acquire_buffer()?;
 
@@ -229,7 +229,7 @@ impl IoUring {
     }
 
     /// Submit an fsync operation
-    pub fn submit_fsync(&self, fd: RawFd) -> TdbResult<u64> {
+    pub fn submit_fsync(&self, fd: RawFd) -> LumaResult<u64> {
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
 
         self.pending.lock().push_back(PendingOp {
@@ -280,11 +280,11 @@ impl IoUring {
         &self.stats
     }
 
-    fn acquire_buffer(&self) -> TdbResult<usize> {
+    fn acquire_buffer(&self) -> LumaResult<usize> {
         self.free_buffers
             .lock()
             .pop_front()
-            .ok_or(TdbError::Memory("No free buffers".into()))
+            .ok_or(LumaError::Memory("No free buffers".into()))
     }
 
     fn release_buffer(&self, idx: usize) {
@@ -312,7 +312,7 @@ struct BatchOp {
 }
 
 impl BatchedIo {
-    pub fn new(config: UringConfig, max_batch_size: usize) -> TdbResult<Self> {
+    pub fn new(config: UringConfig, max_batch_size: usize) -> LumaResult<Self> {
         Ok(Self {
             uring: IoUring::new(config)?,
             batch: Mutex::new(Vec::with_capacity(max_batch_size)),
@@ -321,7 +321,7 @@ impl BatchedIo {
     }
 
     /// Queue a read operation
-    pub fn queue_read<F>(&self, fd: RawFd, offset: u64, len: usize, callback: F) -> TdbResult<()>
+    pub fn queue_read<F>(&self, fd: RawFd, offset: u64, len: usize, callback: F) -> LumaResult<()>
     where
         F: FnOnce(io::Result<usize>) + Send + 'static,
     {
@@ -343,7 +343,7 @@ impl BatchedIo {
     }
 
     /// Queue a write operation
-    pub fn queue_write<F>(&self, fd: RawFd, offset: u64, data: Vec<u8>, callback: F) -> TdbResult<()>
+    pub fn queue_write<F>(&self, fd: RawFd, offset: u64, data: Vec<u8>, callback: F) -> LumaResult<()>
     where
         F: FnOnce(io::Result<usize>) + Send + 'static,
     {
@@ -365,7 +365,7 @@ impl BatchedIo {
     }
 
     /// Flush all pending operations
-    pub fn flush(&self) -> TdbResult<()> {
+    pub fn flush(&self) -> LumaResult<()> {
         let mut batch = self.batch.lock();
         let ops: Vec<_> = batch.drain(..).collect();
         drop(batch);

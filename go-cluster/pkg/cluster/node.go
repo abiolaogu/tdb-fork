@@ -14,7 +14,7 @@ import (
 
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb"
-	"github.com/tdb-plus/cluster/pkg/config"
+	"github.com/lumadb/cluster/pkg/config"
 	"go.uber.org/zap"
 )
 

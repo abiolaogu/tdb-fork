@@ -1,0 +1,235 @@
+//! TDB+ Core Storage Engine
+//!
+//! A high-performance, persistent storage engine written in Rust.
+//! Inspired by Aerospike, ScyllaDB, DragonflyDB, and YugabyteDB.
+//!
+//! # Architecture
+//!
+//! ```text
+//! ┌─────────────────────────────────────────────────────────────┐
+//! │                    TDB+ Storage Engine                       │
+//! ├─────────────────────────────────────────────────────────────┤
+//! │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+//! │  │   MemTable  │  │  BlockCache │  │   Bloom Filters     │ │
+//! │  │  (SkipList) │  │   (LRU)     │  │                     │ │
+//! │  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
+//! │         │                │                    │            │
+//! │  ┌──────▼────────────────▼────────────────────▼──────────┐ │
+//! │  │              LSM-Tree Storage Manager                  │ │
+//! │  │  (Leveled Compaction, Tiered Compaction)              │ │
+//! │  └──────────────────────┬────────────────────────────────┘ │
+//! │                         │                                  │
+//! │  ┌──────────────────────▼────────────────────────────────┐ │
+//! │  │           Write-Ahead Log (WAL)                        │ │
+//! │  │  (Sequential writes, fsync batching)                  │ │
+//! │  └──────────────────────┬────────────────────────────────┘ │
+//! │                         │                                  │
+//! │  ┌──────────────────────▼────────────────────────────────┐ │
+//! │  │         Memory-Mapped File Storage                     │ │
+//! │  │  (Zero-copy reads, direct I/O)                        │ │
+//! │  └───────────────────────────────────────────────────────┘ │
+//! └─────────────────────────────────────────────────────────────┘
+//! ```
+
+pub mod storage;
+pub mod index;
+pub mod memory;
+pub mod wal;
+pub mod error;
+pub mod config;
+pub mod types;
+pub mod shard;
+pub mod compaction;
+
+// Re-exports
+pub use storage::{StorageEngine, Document, Collection};
+pub use index::{Index, IndexType, BTreeIndex, HashIndex};
+pub use memory::{MemTable, BlockCache};
+pub use wal::WriteAheadLog;
+pub use error::{TdbError, Result};
+pub use config::Config;
+pub use types::*;
+pub use shard::ShardManager;
+
+use std::sync::Arc;
+use parking_lot::RwLock;
+use dashmap::DashMap;
+
+/// TDB+ Database instance
+pub struct Database {
+    config: Config,
+    shards: Arc<ShardManager>,
+    collections: DashMap<String, Arc<Collection>>,
+    wal: Arc<WriteAheadLog>,
+    stats: Arc<RwLock<DatabaseStats>>,
+}
+
+impl Database {
+    /// Create a new database instance
+    pub fn new(config: Config) -> Result<Self> {
+        let wal = Arc::new(WriteAheadLog::new(&config)?);
+        let shards = Arc::new(ShardManager::new(&config)?);
+
+        Ok(Self {
+            config,
+            shards,
+            collections: DashMap::new(),
+            wal,
+            stats: Arc::new(RwLock::new(DatabaseStats::default())),
+        })
+    }
+
+    /// Open an existing database or create new
+    pub async fn open(config: Config) -> Result<Self> {
+        let db = Self::new(config)?;
+        db.recover_from_wal().await?;
+        Ok(db)
+    }
+
+    /// Get or create a collection
+    pub fn collection(&self, name: &str) -> Arc<Collection> {
+        self.collections
+            .entry(name.to_string())
+            .or_insert_with(|| {
+                Arc::new(Collection::new(
+                    name.to_string(),
+                    self.shards.clone(),
+                    self.wal.clone(),
+                ))
+            })
+            .clone()
+    }
+
+    /// Insert a document
+    pub async fn insert(&self, collection: &str, doc: Document) -> Result<DocumentId> {
+        let coll = self.collection(collection);
+        let id = coll.insert(doc).await?;
+        self.stats.write().inserts += 1;
+        Ok(id)
+    }
+
+    /// Get a document by ID
+    pub async fn get(&self, collection: &str, id: &DocumentId) -> Result<Option<Document>> {
+        let coll = self.collection(collection);
+        let result = coll.get(id).await?;
+        self.stats.write().reads += 1;
+        Ok(result)
+    }
+
+    /// Update a document
+    pub async fn update(&self, collection: &str, id: &DocumentId, doc: Document) -> Result<bool> {
+        let coll = self.collection(collection);
+        let result = coll.update(id, doc).await?;
+        self.stats.write().updates += 1;
+        Ok(result)
+    }
+
+    /// Delete a document
+    pub async fn delete(&self, collection: &str, id: &DocumentId) -> Result<bool> {
+        let coll = self.collection(collection);
+        let result = coll.delete(id).await?;
+        self.stats.write().deletes += 1;
+        Ok(result)
+    }
+
+    /// Batch insert for high throughput
+    pub async fn batch_insert(&self, collection: &str, docs: Vec<Document>) -> Result<Vec<DocumentId>> {
+        let coll = self.collection(collection);
+        let ids = coll.batch_insert(docs).await?;
+        self.stats.write().inserts += ids.len() as u64;
+        Ok(ids)
+    }
+
+    /// Scan with predicate
+    pub async fn scan<F>(&self, collection: &str, predicate: F) -> Result<Vec<Document>>
+    where
+        F: Fn(&Document) -> bool + Send + Sync,
+    {
+        let coll = self.collection(collection);
+        coll.scan(predicate).await
+    }
+
+    /// Recover from WAL after crash
+    async fn recover_from_wal(&self) -> Result<()> {
+        let entries = self.wal.recover().await?;
+        for entry in entries {
+            match entry.op {
+                WalOperation::Insert { collection, doc } => {
+                    let coll = self.collection(&collection);
+                    coll.replay_insert(doc).await?;
+                }
+                WalOperation::Update { collection, id, doc } => {
+                    let coll = self.collection(&collection);
+                    coll.replay_update(&id, doc).await?;
+                }
+                WalOperation::Delete { collection, id } => {
+                    let coll = self.collection(&collection);
+                    coll.replay_delete(&id).await?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Flush all data to disk
+    pub async fn flush(&self) -> Result<()> {
+        for entry in self.collections.iter() {
+            entry.value().flush().await?;
+        }
+        self.wal.sync().await?;
+        Ok(())
+    }
+
+    /// Get database statistics
+    pub fn stats(&self) -> DatabaseStats {
+        self.stats.read().clone()
+    }
+
+    /// Compact all collections
+    pub async fn compact(&self) -> Result<()> {
+        for entry in self.collections.iter() {
+            entry.value().compact().await?;
+        }
+        Ok(())
+    }
+}
+
+/// Database statistics
+#[derive(Debug, Clone, Default)]
+pub struct DatabaseStats {
+    pub inserts: u64,
+    pub reads: u64,
+    pub updates: u64,
+    pub deletes: u64,
+    pub cache_hits: u64,
+    pub cache_misses: u64,
+    pub compactions: u64,
+    pub bytes_written: u64,
+    pub bytes_read: u64,
+}
+
+/// WAL operation types
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub enum WalOperation {
+    Insert { collection: String, doc: Document },
+    Update { collection: String, id: DocumentId, doc: Document },
+    Delete { collection: String, id: DocumentId },
+}
+
+/// WAL entry
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct WalEntry {
+    pub sequence: u64,
+    pub timestamp: i64,
+    pub op: WalOperation,
+}
+
+// FFI exports for Go and Python
+#[cfg(feature = "python")]
+mod python_bindings;
+
+#[no_mangle]
+pub extern "C" fn tdb_version() -> *const std::ffi::c_char {
+    static VERSION: &str = "1.0.0\0";
+    VERSION.as_ptr() as *const std::ffi::c_char
+}

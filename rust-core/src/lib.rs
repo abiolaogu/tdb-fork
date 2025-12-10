@@ -1,36 +1,63 @@
 //! TDB+ Core Storage Engine
 //!
-//! A high-performance, persistent storage engine written in Rust.
-//! Inspired by Aerospike, ScyllaDB, DragonflyDB, and YugabyteDB.
+//! A high-performance, distributed storage engine written in Rust.
+//! Designed to outperform Aerospike, ScyllaDB, DragonflyDB, YugabyteDB, and kdb+.
+//!
+//! # Key Features
+//!
+//! - **Hybrid Memory Architecture**: Data runs on both RAM and SSD, with automatic
+//!   hot/cold tiering (Aerospike-inspired)
+//! - **Columnar Storage**: kdb+-style vectorized operations with SIMD acceleration
+//! - **Shard-Per-Core**: ScyllaDB-inspired lock-free architecture
+//! - **io_uring**: Maximum I/O throughput on Linux
+//! - **Predictable Latency**: Sub-millisecond SLAs with admission control
 //!
 //! # Architecture
 //!
 //! ```text
-//! ┌─────────────────────────────────────────────────────────────┐
-//! │                    TDB+ Storage Engine                       │
-//! ├─────────────────────────────────────────────────────────────┤
-//! │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-//! │  │   MemTable  │  │  BlockCache │  │   Bloom Filters     │ │
-//! │  │  (SkipList) │  │   (LRU)     │  │                     │ │
-//! │  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
-//! │         │                │                    │            │
-//! │  ┌──────▼────────────────▼────────────────────▼──────────┐ │
-//! │  │              LSM-Tree Storage Manager                  │ │
-//! │  │  (Leveled Compaction, Tiered Compaction)              │ │
-//! │  └──────────────────────┬────────────────────────────────┘ │
-//! │                         │                                  │
-//! │  ┌──────────────────────▼────────────────────────────────┐ │
-//! │  │           Write-Ahead Log (WAL)                        │ │
-//! │  │  (Sequential writes, fsync batching)                  │ │
-//! │  └──────────────────────┬────────────────────────────────┘ │
-//! │                         │                                  │
-//! │  ┌──────────────────────▼────────────────────────────────┐ │
-//! │  │         Memory-Mapped File Storage                     │ │
-//! │  │  (Zero-copy reads, direct I/O)                        │ │
-//! │  └───────────────────────────────────────────────────────┘ │
-//! └─────────────────────────────────────────────────────────────┘
+//! ┌─────────────────────────────────────────────────────────────────────┐
+//! │                    TDB+ Storage Engine v2.0                          │
+//! ├─────────────────────────────────────────────────────────────────────┤
+//! │                                                                      │
+//! │  ┌─────────────────────────────────────────────────────────────┐    │
+//! │  │                  Hybrid Memory Layer                         │    │
+//! │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │    │
+//! │  │  │   RAM    │  │   SSD    │  │   HDD    │  │  Cache   │    │    │
+//! │  │  │  (Hot)   │◄─┤  (Warm)  │◄─┤  (Cold)  │  │  (LRU)   │    │    │
+//! │  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │    │
+//! │  └─────────────────────────────────────────────────────────────┘    │
+//! │                                                                      │
+//! │  ┌──────────────────────┐  ┌────────────────────────────────────┐  │
+//! │  │  Columnar Engine     │  │      Row-Based Engine              │  │
+//! │  │  ┌────────────────┐  │  │  ┌─────────────┐  ┌─────────────┐ │  │
+//! │  │  │ SIMD Vectorized│  │  │  │   MemTable  │  │ BlockCache  │ │  │
+//! │  │  │  Operations    │  │  │  │  (SkipList) │  │   (LRU)     │ │  │
+//! │  │  └────────────────┘  │  │  └─────────────┘  └─────────────┘ │  │
+//! │  │  ┌────────────────┐  │  │  ┌─────────────────────────────┐  │  │
+//! │  │  │  Time-Series   │  │  │  │     LSM-Tree Storage        │  │  │
+//! │  │  │  Optimizations │  │  │  │  (Leveled/Universal)        │  │  │
+//! │  │  └────────────────┘  │  │  └─────────────────────────────┘  │  │
+//! │  └──────────────────────┘  └────────────────────────────────────┘  │
+//! │                                                                      │
+//! │  ┌───────────────────────────────────────────────────────────────┐  │
+//! │  │                   I/O Subsystem                                │  │
+//! │  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────┐ │  │
+//! │  │  │   io_uring   │  │  Direct I/O  │  │   WAL (Group Commit)│ │  │
+//! │  │  │   (Linux)    │  │   Bypass     │  │                     │ │  │
+//! │  │  └──────────────┘  └──────────────┘  └─────────────────────┘ │  │
+//! │  └───────────────────────────────────────────────────────────────┘  │
+//! │                                                                      │
+//! │  ┌───────────────────────────────────────────────────────────────┐  │
+//! │  │                   SLA & Latency Control                        │  │
+//! │  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────┐ │  │
+//! │  │  │  Admission   │  │   Latency    │  │   Backpressure      │ │  │
+//! │  │  │  Control     │  │  Histograms  │  │   Management        │ │  │
+//! │  │  └──────────────┘  └──────────────┘  └─────────────────────┘ │  │
+//! │  └───────────────────────────────────────────────────────────────┘  │
+//! └─────────────────────────────────────────────────────────────────────┘
 //! ```
 
+// Core modules
 pub mod storage;
 pub mod index;
 pub mod memory;
@@ -41,7 +68,14 @@ pub mod types;
 pub mod shard;
 pub mod compaction;
 
-// Re-exports
+// High-performance modules
+pub mod hybrid;      // Hybrid RAM/SSD storage (Aerospike-style)
+pub mod columnar;    // Columnar storage with SIMD (kdb+-style)
+pub mod io;          // io_uring and direct I/O
+pub mod latency;     // Predictable latency SLAs
+pub mod ffi;         // FFI bindings for Go/Python
+
+// Re-exports - Core
 pub use storage::{StorageEngine, Document, Collection};
 pub use index::{Index, IndexType, BTreeIndex, HashIndex};
 pub use memory::{MemTable, BlockCache};
@@ -50,6 +84,12 @@ pub use error::{TdbError, Result};
 pub use config::Config;
 pub use types::*;
 pub use shard::ShardManager;
+
+// Re-exports - High Performance
+pub use hybrid::{HybridStorage, HybridConfig, StorageTier};
+pub use columnar::{Column, ColumnType, ColumnarTable, Schema};
+pub use io::{IoUring, UringConfig, BatchedIo};
+pub use latency::{SlaMonitor, SlaTier, LatencyHistogram};
 
 use std::sync::Arc;
 use parking_lot::RwLock;
@@ -230,6 +270,6 @@ mod python_bindings;
 
 #[no_mangle]
 pub extern "C" fn tdb_version() -> *const std::ffi::c_char {
-    static VERSION: &str = "1.0.0\0";
+    static VERSION: &str = "2.0.0\0";
     VERSION.as_ptr() as *const std::ffi::c_char
 }

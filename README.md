@@ -41,11 +41,29 @@
 
 ## Why TDB+?
 
+### Hybrid Memory Architecture (Aerospike-style)
+- **RAM + SSD**: Hot data in RAM, warm data on SSD, cold data on HDD
+- **Primary Index in RAM**: O(1) lookups with predictable latency
+- **Automatic Tiering**: Data automatically migrates based on access patterns
+- **NUMA-Aware**: Optimized memory allocation for multi-socket servers
+
+### Ultra-High Performance (Outperforms kdb+)
+- **SIMD Vectorized Operations**: AVX2/AVX-512 accelerated analytics
+- **Columnar Storage**: kdb+-style column-oriented engine for analytics
+- **Time-Series Optimizations**: Specialized indexing and compression
+- **io_uring**: Kernel-bypass async I/O for maximum throughput
+
 ### Performance (Inspired by Aerospike, ScyllaDB, DragonflyDB)
 - **Rust Core**: Lock-free data structures, zero-copy I/O, memory-mapped files
 - **LSM-Tree Storage**: Optimized write path with leveled compaction
 - **Shard-Per-Core**: ScyllaDB-inspired architecture for minimal lock contention
 - **Batch Commits**: DragonflyDB-inspired group commit for high throughput
+
+### Predictable Latency (SLA Guarantees)
+- **Sub-millisecond Reads**: Critical operations < 1ms p99
+- **Admission Control**: Backpressure prevents overload
+- **Latency Histograms**: Real-time percentile tracking
+- **Priority Tiers**: Critical, High, Normal, Background
 
 ### Scalability (Inspired by YugabyteDB)
 - **Raft Consensus**: Strong consistency across distributed nodes

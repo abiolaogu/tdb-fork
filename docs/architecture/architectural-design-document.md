@@ -1,13 +1,13 @@
-# TDB+ Architectural Design Document (ADD)
+# LumaDB Architectural Design Document (ADD)
 
 ## Document Information
 
 | Field | Value |
 |-------|-------|
-| **Document Title** | TDB+ Architectural Design Document |
+| **Document Title** | LumaDB Architectural Design Document |
 | **Version** | 2.0.0 |
 | **Status** | Approved |
-| **Author** | TDB+ Architecture Team |
+| **Author** | LumaDB Architecture Team |
 | **Last Updated** | 2024-01-15 |
 
 ---
@@ -33,7 +33,7 @@
 
 ### 1.1 Purpose
 
-TDB+ is a next-generation, high-performance database platform designed to surpass existing enterprise databases in performance, scalability, and intelligence. This document describes the architectural design that enables TDB+ to achieve:
+LumaDB is a next-generation, high-performance database platform designed to surpass existing enterprise databases in performance, scalability, and intelligence. This document describes the architectural design that enables LumaDB to achieve:
 
 - **Sub-millisecond latencies** at scale
 - **Millions of operations per second** throughput
@@ -54,7 +54,7 @@ This ADD covers:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    TDB+ Design Philosophy                            │
+│                    LumaDB Design Philosophy                            │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │   "Right Language for Right Job"                                    │
@@ -87,7 +87,7 @@ This ADD covers:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              TDB+ Platform                                       │
+│                              LumaDB Platform                                       │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
@@ -340,7 +340,7 @@ This ADD covers:
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │                   PROMPTQL ENGINE                        │   │
+│  │                   PROMPLQL ENGINE                        │   │
 │  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐    │   │
 │  │  │   Semantic   │ │    Query     │ │   Multi-Step │    │   │
 │  │  │    Parser    │ │   Planner    │ │   Reasoner   │    │   │
@@ -636,7 +636,7 @@ This ADD covers:
 │                                                                  │
 │  gRPC API:                                                      │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │  service TDBPlus {                                      │   │
+│  │  service LumaDBPlus {                                      │   │
 │  │    rpc Insert(InsertRequest) returns (InsertResponse);  │   │
 │  │    rpc Get(GetRequest) returns (GetResponse);           │   │
 │  │    rpc Query(QueryRequest) returns (stream QueryRow);   │   │

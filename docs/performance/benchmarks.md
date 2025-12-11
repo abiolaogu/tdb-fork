@@ -1,8 +1,8 @@
-# TDB+ Performance Benchmarks
+# LumaDB Performance Benchmarks
 
 ## Executive Summary
 
-TDB+ has been designed to outperform leading databases across all key metrics. This document presents comprehensive benchmark results comparing TDB+ against Aerospike, ScyllaDB, DragonflyDB, YugabyteDB, and kdb+.
+LumaDB has been designed to outperform leading databases across all key metrics. This document presents comprehensive benchmark results comparing LumaDB against Aerospike, ScyllaDB, DragonflyDB, YugabyteDB, and kdb+.
 
 ---
 
@@ -22,7 +22,7 @@ TDB+ has been designed to outperform leading databases across all key metrics. T
 
 | Database | Version |
 |----------|---------|
-| TDB+ | 2.0.0 |
+| LumaDB | 2.0.0 |
 | Aerospike | 6.4.0 |
 | ScyllaDB | 5.4 |
 | DragonflyDB | 1.14.0 |
@@ -41,7 +41,7 @@ TDB+ has been designed to outperform leading databases across all key metrics. T
 
 #### Results
 
-| Percentile | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
+| Percentile | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
 |------------|------|-----------|----------|-------------|------------|------|
 | p50 | **0.08ms** | 0.15ms | 0.25ms | 0.12ms | 1.2ms | 0.10ms |
 | p95 | **0.15ms** | 0.35ms | 0.8ms | 0.25ms | 3.5ms | 0.25ms |
@@ -52,7 +52,7 @@ TDB+ has been designed to outperform leading databases across all key metrics. T
 Point Read Latency (p99) - Lower is Better
 ═══════════════════════════════════════════════════════════════
 
-TDB+        ████████ 0.30ms
+LumaDB        ████████ 0.30ms
 kdb+        ████████████████ 0.40ms
 DragonflyDB ████████████████████ 0.50ms
 Aerospike   ████████████████████████████████████████ 1.0ms
@@ -60,7 +60,7 @@ ScyllaDB    ██████████████████████�
 YugabyteDB  ████████████████████████████████████████████████████████████████████████████████████████████████ (8.0ms - off chart)
 ```
 
-#### TDB+ Advantages:
+#### LumaDB Advantages:
 - **Primary index always in RAM** - No disk access for key lookup
 - **io_uring** - Asynchronous I/O eliminates syscall overhead
 - **NUMA-aware allocation** - Data locality on multi-socket systems
@@ -76,7 +76,7 @@ YugabyteDB  ██████████████████████�
 
 #### Results (Operations per Second)
 
-| Batch Size | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
+| Batch Size | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
 |------------|------|-----------|----------|-------------|------------|------|
 | 1 | 450K | 280K | 180K | 380K | 45K | 320K |
 | 10 | 1.2M | 680K | 450K | 950K | 120K | 780K |
@@ -87,7 +87,7 @@ YugabyteDB  ██████████████████████�
 Write Throughput (Batch=100) - Higher is Better
 ═══════════════════════════════════════════════════════════════
 
-TDB+        ████████████████████████████████████████████████████████████████████████████████████████████ 2.1M ops/s
+LumaDB        ████████████████████████████████████████████████████████████████████████████████████████████ 2.1M ops/s
 DragonflyDB ██████████████████████████████████████████████████████████████████ 1.5M ops/s
 kdb+        ██████████████████████████████████████████████████ 1.2M ops/s
 Aerospike   ████████████████████████████████████████████ 1.0M ops/s
@@ -95,7 +95,7 @@ ScyllaDB    ██████████████████████�
 YugabyteDB  █████████████ 280K ops/s
 ```
 
-#### TDB+ Advantages:
+#### LumaDB Advantages:
 - **Group commit WAL** - Batches multiple writes into single fsync
 - **Lock-free MemTable** - Concurrent writes without contention
 - **Direct I/O** - Bypasses OS page cache for predictable performance
@@ -113,7 +113,7 @@ YugabyteDB  █████████████ 280K ops/s
 
 | Database | Scan Rate | Time for 100M |
 |----------|-----------|---------------|
-| **TDB+** | **82M rec/s** | **1.2s** |
+| **LumaDB** | **82M rec/s** | **1.2s** |
 | kdb+ | 40M rec/s | 2.5s |
 | ScyllaDB | 12M rec/s | 8.3s |
 | DragonflyDB | 28M rec/s | 3.6s |
@@ -124,7 +124,7 @@ YugabyteDB  █████████████ 280K ops/s
 Scan Rate - Higher is Better
 ═══════════════════════════════════════════════════════════════
 
-TDB+        ████████████████████████████████████████████████████████████████████████████████████████████ 82M/s
+LumaDB        ████████████████████████████████████████████████████████████████████████████████████████████ 82M/s
 kdb+        ███████████████████████████████████████████ 40M/s
 DragonflyDB ██████████████████████████████ 28M/s
 Aerospike   ████████████████ 15M/s
@@ -132,7 +132,7 @@ ScyllaDB    █████████████ 12M/s
 YugabyteDB  █████████ 8M/s
 ```
 
-#### TDB+ Advantages:
+#### LumaDB Advantages:
 - **SIMD vectorized filters** - Process 8-16 values per CPU cycle
 - **Columnar storage** - Only read required columns
 - **Prefetch engine** - Predictive data loading
@@ -150,7 +150,7 @@ YugabyteDB  █████████ 8M/s
 
 | Database | Query Time | Rows/Second |
 |----------|------------|-------------|
-| **TDB+** | **1.2s** | **833M/s** |
+| **LumaDB** | **1.2s** | **833M/s** |
 | kdb+ | 2.5s | 400M/s |
 | ScyllaDB | 45s | 22M/s |
 | DragonflyDB | N/A | N/A |
@@ -161,7 +161,7 @@ YugabyteDB  █████████ 8M/s
 Aggregation Query (1B rows) - Lower Time is Better
 ═══════════════════════════════════════════════════════════════
 
-TDB+        ████ 1.2s
+LumaDB        ████ 1.2s
 kdb+        █████████ 2.5s
 ScyllaDB    ████████████████████████████████████████████████████████████████████████████████████████████████ 45s
 YugabyteDB  ████████████████████████████████████████████████████████████████████████████████████████████████ (85s - off chart)
@@ -169,7 +169,7 @@ DragonflyDB N/A (No native aggregation)
 Aerospike   N/A (No native aggregation)
 ```
 
-#### TDB+ Advantages:
+#### LumaDB Advantages:
 - **Vectorized aggregations** - AVX-512 parallel processing
 - **Delta-of-delta compression** - Minimal data to decompress
 - **Streaming aggregates** - Process data as it's read
@@ -185,7 +185,7 @@ Aerospike   N/A (No native aggregation)
 
 #### Results (Operations per Second)
 
-| Workload | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB |
+| Workload | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB |
 |----------|------|-----------|----------|-------------|------------|
 | A (50/50) | **1.8M** | 850K | 520K | 1.2M | 180K |
 | B (95/5) | **2.4M** | 1.1M | 780K | 1.8M | 250K |
@@ -196,7 +196,7 @@ Aerospike   N/A (No native aggregation)
 YCSB Workload A (50/50 Read/Write) - Higher is Better
 ═══════════════════════════════════════════════════════════════
 
-TDB+        ████████████████████████████████████████████████████████████████████████████████████████████ 1.8M ops/s
+LumaDB        ████████████████████████████████████████████████████████████████████████████████████████████ 1.8M ops/s
 DragonflyDB ████████████████████████████████████████████████████████████████████ 1.2M ops/s
 Aerospike   ████████████████████████████████████████████████ 850K ops/s
 ScyllaDB    ██████████████████████████████ 520K ops/s
@@ -212,14 +212,14 @@ YugabyteDB  ██████████ 180K ops/s
 
 | Database | RAM Used | Efficiency | Overhead |
 |----------|----------|------------|----------|
-| **TDB+** | **118GB** | **85%** | 18% |
+| **LumaDB** | **118GB** | **85%** | 18% |
 | DragonflyDB | 125GB | 80% | 25% |
 | ScyllaDB | 133GB | 75% | 33% |
 | Aerospike | 143GB | 70% | 43% |
 | kdb+ | 154GB | 65% | 54% |
 | YugabyteDB | 167GB | 60% | 67% |
 
-#### TDB+ Advantages:
+#### LumaDB Advantages:
 - **Compact index entries** - 64-byte cache-line aligned
 - **Efficient compression** - Multiple codec options
 - **Shared-nothing design** - No cross-shard overhead
@@ -232,14 +232,14 @@ YugabyteDB  ██████████ 180K ops/s
 **Test**: p99.9 latency at various throughput levels
 **Dataset**: 1 billion records
 
-| Target Throughput | TDB+ p99.9 | Aerospike p99.9 | ScyllaDB p99.9 |
+| Target Throughput | LumaDB p99.9 | Aerospike p99.9 | ScyllaDB p99.9 |
 |-------------------|------------|-----------------|----------------|
 | 100K ops/s | **0.4ms** | 1.5ms | 3.0ms |
 | 500K ops/s | **0.6ms** | 3.0ms | 8.0ms |
 | 1M ops/s | **1.2ms** | 8.0ms | 25ms |
 | 2M ops/s | **2.5ms** | 25ms | 80ms |
 
-#### TDB+ Advantages:
+#### LumaDB Advantages:
 - **Admission control** - Prevents overload
 - **SLA monitoring** - Real-time latency tracking
 - **Request prioritization** - Critical requests first
@@ -252,7 +252,7 @@ YugabyteDB  ██████████ 180K ops/s
 **Test**: Natural language query processing
 **Queries**: Complex analytical questions
 
-| Query Type | TDB+ PromptQL | Traditional SQL |
+| Query Type | LumaDB PromptQL | Traditional SQL |
 |------------|---------------|-----------------|
 | Simple retrieval | 15ms | 8ms |
 | Multi-step reasoning | 250ms | N/A |
@@ -261,7 +261,7 @@ YugabyteDB  ██████████ 180K ops/s
 
 *Requires rewriting entire query
 
-#### Unique TDB+ Capabilities:
+#### Unique LumaDB Capabilities:
 - **Multi-step reasoning** - Complex queries decomposed automatically
 - **Conversation context** - Follow-up queries understand previous context
 - **Semantic understanding** - Typo correction, synonym handling
@@ -291,9 +291,9 @@ YugabyteDB  ██████████ 180K ops/s
 
 ## Summary
 
-### TDB+ Performance Leadership
+### LumaDB Performance Leadership
 
-| Metric | TDB+ Rank | Key Advantage |
+| Metric | LumaDB Rank | Key Advantage |
 |--------|-----------|---------------|
 | Read Latency | **#1** | Hybrid memory + io_uring |
 | Write Throughput | **#1** | Group commit + lock-free |
@@ -304,7 +304,7 @@ YugabyteDB  ██████████ 180K ops/s
 | Tail Latency | **#1** | SLA management |
 | AI Queries | **#1** | Only database with PromptQL |
 
-### When to Choose TDB+
+### When to Choose LumaDB
 
 - **Low latency requirements** - Sub-millisecond SLAs
 - **High throughput** - Millions of operations per second

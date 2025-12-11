@@ -95,7 +95,7 @@ export class LQLParser {
     const collection = this.consumeIdentifier();
 
     const result: ParsedQuery = {
-      type: 'SELECT',
+      type: aggregations.length > 0 ? 'AGGREGATE' : 'SELECT',
       collection,
       fields: aggregations.length > 0 ? undefined : fields,
       aggregations: aggregations.length > 0 ? aggregations : undefined,

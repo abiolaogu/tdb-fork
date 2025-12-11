@@ -1,8 +1,8 @@
-# TDB+ Documentation
+# LumaDB Documentation
 
 ## The Next-Generation High-Performance Database
 
-TDB+ is a modern, multi-language database platform designed to outperform existing enterprise databases including Aerospike, ScyllaDB, DragonflyDB, YugabyteDB, and kdb+.
+LumaDB is a modern, multi-language database platform designed to outperform existing enterprise databases including Aerospike, ScyllaDB, DragonflyDB, YugabyteDB, and kdb+.
 
 ---
 
@@ -61,7 +61,7 @@ TDB+ is a modern, multi-language database platform designed to outperform existi
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      TDB+ Platform                          │
+│                      LumaDB Platform                          │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │  Rust Core  │  │  Go Service │  │     Python AI       │ │
@@ -77,7 +77,7 @@ TDB+ is a modern, multi-language database platform designed to outperform existi
 
 ### Performance Highlights
 
-| Metric | TDB+ | Aerospike | ScyllaDB | DragonflyDB | kdb+ |
+| Metric | LumaDB | Aerospike | ScyllaDB | DragonflyDB | kdb+ |
 |--------|------|-----------|----------|-------------|------|
 | Read Latency (p99) | **0.3ms** | 1ms | 2ms | 0.5ms | 0.4ms |
 | Write Throughput | **2.1M ops/s** | 1M ops/s | 800K ops/s | 1.5M ops/s | 1.2M ops/s |
@@ -87,7 +87,7 @@ TDB+ is a modern, multi-language database platform designed to outperform existi
 
 ### Query Languages
 
-TDB+ supports multiple query interfaces:
+LumaDB supports multiple query interfaces:
 
 1. **PromptQL** - AI-powered natural language with reasoning
 2. **NLQ** - Natural Language Queries
@@ -103,7 +103,7 @@ from tdbai import PromptQLEngine, LLMConfig
 
 # Initialize PromptQL with AI capabilities
 engine = PromptQLEngine(
-    db_client=tdb_connection,
+    db_client=luma_connection,
     llm_config=LLMConfig(provider="openai", model="gpt-4")
 )
 
@@ -127,4 +127,4 @@ result = await engine.query("Now show me just the top 10 by revenue")
 
 ---
 
-**TDB+ - Where Performance Meets Intelligence**
+**LumaDB - Where Performance Meets Intelligence**

@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # Go Cluster Node (Core Database Service)
+  luma-node:
+    build:
+      context: .
+      dockerfile: go-cluster/Dockerfile
+    container_name: luma-node-01
+    ports:
+      - "8080:8080" # HTTP API
+      - "9090:9090" # gRPC Internal
+    environment:
+      LUMA_NODE_ID: node-01
+      LUMA_HTTP_ADDR: :8080
+      LUMA_GRPC_ADDR: :9090
+      LUMA_RAFT_ADDR: :10000
+    volumes:
+      - luma-data:/data
+    networks:
+      - luma-net
+    restart: unless-stopped
+
+  # Python AI Service (Optional AI Features)
+  luma-ai:
+    build:
+      context: .
+      dockerfile: python-ai/Dockerfile
+    container_name: luma-ai
+    ports:
+      - "8000:8000"
+    environment:
+      LUMA_AI_PORT: 8000
+      LUMA_AI_HOST: 0.0.0.0
+    networks:
+      - luma-net
+    restart: unless-stopped
+
+volumes:
+  luma-data:
+
+
+networks:
+  luma-net:
+    driver: bridge

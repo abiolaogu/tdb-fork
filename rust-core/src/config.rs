@@ -1,6 +1,8 @@
-//! Configuration for TDB+
+//! Global configuration for LumaDB
 //!
 //! Inspired by best practices from Aerospike, ScyllaDB, and DragonflyDB
+
+use crate::hybrid::{TieringConfig, TierPolicy, RedundancyStrategy};
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -32,12 +34,15 @@ pub struct Config {
 
     /// Performance tuning
     pub performance: PerformanceConfig,
+
+    /// Multi-Tier Storage Policies
+    pub tiering: TieringConfig,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            data_dir: PathBuf::from("./tdb_data"),
+            data_dir: PathBuf::from("./luma_data"),
             memory: MemoryConfig::default(),
             storage: StorageConfig::default(),
             wal: WalConfig::default(),
@@ -45,6 +50,7 @@ impl Default for Config {
             sharding: ShardConfig::default(),
             cache: CacheConfig::default(),
             performance: PerformanceConfig::default(),
+            tiering: TieringConfig::default(),
         }
     }
 }

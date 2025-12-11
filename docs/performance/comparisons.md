@@ -1,8 +1,8 @@
-# TDB+ Database Comparisons
+# LumaDB Database Comparisons
 
 ## Comprehensive Feature and Performance Comparison
 
-This document provides detailed comparisons between TDB+ and other leading databases.
+This document provides detailed comparisons between LumaDB and other leading databases.
 
 ---
 
@@ -10,7 +10,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ### Core Features
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
 |---------|------|-----------|----------|-------------|------------|------|
 | **Data Model** | Document/Columnar | Key-Value | Wide Column | Key-Value | Document/Relational | Columnar |
 | **Query Language** | PromptQL/SQL/NLQ | AQL | CQL | Redis Protocol | SQL/YSQL | q |
@@ -23,7 +23,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ### Scalability
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
 |---------|------|-----------|----------|-------------|------------|------|
 | **Horizontal Scaling** | Yes | Yes | Yes | Limited | Yes | Limited |
 | **Auto-Sharding** | Yes | Yes | Yes | No | Yes | No |
@@ -33,7 +33,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ### Performance Features
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
 |---------|------|-----------|----------|-------------|------------|------|
 | **Hybrid RAM/SSD** | **Yes** | Yes | No | No | No | No |
 | **SIMD Operations** | **Yes** | No | No | No | No | Yes |
@@ -43,7 +43,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ### AI & ML Capabilities
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | kdb+ |
 |---------|------|-----------|----------|-------------|------------|------|
 | **PromptQL** | **Yes** | No | No | No | No | No |
 | **LLM Integration** | **Yes** | No | No | No | No | No |
@@ -56,7 +56,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ## Detailed Comparisons
 
-### TDB+ vs Aerospike
+### LumaDB vs Aerospike
 
 #### Architecture Comparison
 
@@ -72,7 +72,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                           TDB+                                   │
+│                           LumaDB                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  • Primary Index: RAM-only (same as Aerospike)                  │
 │  • Data Storage: RAM + SSD + HDD hybrid (extended)              │
@@ -85,14 +85,14 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 #### Performance Comparison
 
-| Metric | TDB+ | Aerospike | TDB+ Advantage |
+| Metric | LumaDB | Aerospike | LumaDB Advantage |
 |--------|------|-----------|----------------|
 | Read Latency (p99) | 0.30ms | 1.0ms | **3.3x faster** |
 | Write Throughput | 2.1M ops/s | 1.0M ops/s | **2.1x faster** |
 | Scan Rate | 82M rec/s | 15M rec/s | **5.5x faster** |
 | Memory Efficiency | 85% | 70% | **21% better** |
 
-#### When to Choose TDB+ over Aerospike
+#### When to Choose LumaDB over Aerospike
 - Need advanced analytics (aggregations, time-series)
 - Require natural language queries
 - Want better scan performance
@@ -101,7 +101,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ---
 
-### TDB+ vs ScyllaDB
+### LumaDB vs ScyllaDB
 
 #### Architecture Comparison
 
@@ -117,7 +117,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                           TDB+                                   │
+│                           LumaDB                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  • Model: Document + Columnar hybrid                            │
 │  • Language: Rust + Go + Python                                 │
@@ -129,14 +129,14 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 #### Performance Comparison
 
-| Metric | TDB+ | ScyllaDB | TDB+ Advantage |
+| Metric | LumaDB | ScyllaDB | LumaDB Advantage |
 |--------|------|----------|----------------|
 | Read Latency (p99) | 0.30ms | 2.0ms | **6.7x faster** |
 | Write Throughput | 2.1M ops/s | 800K ops/s | **2.6x faster** |
 | Scan Rate | 82M rec/s | 12M rec/s | **6.8x faster** |
 | Aggregation (1B rows) | 1.2s | 45s | **37x faster** |
 
-#### When to Choose TDB+ over ScyllaDB
+#### When to Choose LumaDB over ScyllaDB
 - Need real-time analytics
 - Require sub-millisecond latencies
 - Want AI-powered queries
@@ -145,7 +145,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ---
 
-### TDB+ vs DragonflyDB
+### LumaDB vs DragonflyDB
 
 #### Architecture Comparison
 
@@ -161,7 +161,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                           TDB+                                   │
+│                           LumaDB                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  • Model: Document + Columnar                                   │
 │  • Language: Rust + Go + Python                                 │
@@ -173,14 +173,14 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 #### Performance Comparison
 
-| Metric | TDB+ | DragonflyDB | TDB+ Advantage |
+| Metric | LumaDB | DragonflyDB | LumaDB Advantage |
 |--------|------|-------------|----------------|
 | Read Latency (p99) | 0.30ms | 0.5ms | **1.7x faster** |
 | Write Throughput | 2.1M ops/s | 1.5M ops/s | **1.4x faster** |
 | Scan Rate | 82M rec/s | 28M rec/s | **2.9x faster** |
 | Memory Efficiency | 85% | 80% | **6% better** |
 
-#### When to Choose TDB+ over DragonflyDB
+#### When to Choose LumaDB over DragonflyDB
 - Need data persistence beyond RAM
 - Require advanced queries beyond key-value
 - Want analytics capabilities
@@ -189,7 +189,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ---
 
-### TDB+ vs YugabyteDB
+### LumaDB vs YugabyteDB
 
 #### Architecture Comparison
 
@@ -205,7 +205,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                           TDB+                                   │
+│                           LumaDB                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  • Model: Document + Columnar with SQL support                  │
 │  • Consistency: Configurable (sync/async)                       │
@@ -217,14 +217,14 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 #### Performance Comparison
 
-| Metric | TDB+ | YugabyteDB | TDB+ Advantage |
+| Metric | LumaDB | YugabyteDB | LumaDB Advantage |
 |--------|------|------------|----------------|
 | Read Latency (p99) | 0.30ms | 8.0ms | **27x faster** |
 | Write Throughput | 2.1M ops/s | 280K ops/s | **7.5x faster** |
 | Scan Rate | 82M rec/s | 8M rec/s | **10x faster** |
 | Aggregation (1B rows) | 1.2s | 85s | **71x faster** |
 
-#### When to Choose TDB+ over YugabyteDB
+#### When to Choose LumaDB over YugabyteDB
 - Need low-latency performance
 - Require high throughput
 - Want real-time analytics
@@ -233,7 +233,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ---
 
-### TDB+ vs kdb+
+### LumaDB vs kdb+
 
 #### Architecture Comparison
 
@@ -249,7 +249,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│                           TDB+                                   │
+│                           LumaDB                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  • Model: Document + Columnar (flexible)                        │
 │  • Language: Standard APIs (REST, gRPC, SQL)                    │
@@ -261,14 +261,14 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 #### Performance Comparison
 
-| Metric | TDB+ | kdb+ | TDB+ Advantage |
+| Metric | LumaDB | kdb+ | LumaDB Advantage |
 |--------|------|------|----------------|
 | Read Latency (p99) | 0.30ms | 0.40ms | **1.3x faster** |
 | Write Throughput | 2.1M ops/s | 1.2M ops/s | **1.75x faster** |
 | Scan Rate | 82M rec/s | 40M rec/s | **2x faster** |
 | Aggregation (1B rows) | 1.2s | 2.5s | **2x faster** |
 
-#### When to Choose TDB+ over kdb+
+#### When to Choose LumaDB over kdb+
 - Need accessible query language (not q)
 - Want natural language queries
 - Require general-purpose database features
@@ -283,7 +283,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 | Database | License Cost | Support | Total |
 |----------|-------------|---------|-------|
-| **TDB+** | **$0 (Open Source)** | Optional | $0 - $50K |
+| **LumaDB** | **$0 (Open Source)** | Optional | $0 - $50K |
 | Aerospike | $150K - $500K | Included | $150K - $500K |
 | ScyllaDB | $0 - $200K | $50K+ | $50K - $250K |
 | DragonflyDB | $0 - $100K | $30K+ | $30K - $130K |
@@ -292,7 +292,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 
 ### Operational Costs (Per 100TB Dataset)
 
-| Factor | TDB+ | Aerospike | ScyllaDB | kdb+ |
+| Factor | LumaDB | Aerospike | ScyllaDB | kdb+ |
 |--------|------|-----------|----------|------|
 | Hardware (RAM) | $40K | $57K | $53K | $62K |
 | Hardware (Storage) | $15K | $18K | $20K | $25K |
@@ -305,7 +305,7 @@ This document provides detailed comparisons between TDB+ and other leading datab
 3-Year Total Cost of Ownership (100TB Dataset)
 ═══════════════════════════════════════════════════════════════
 
-TDB+        ████████████████████████ $225K
+LumaDB        ████████████████████████ $225K
 ScyllaDB    ████████████████████████████████████████████████████████████ $559K
 Aerospike   ████████████████████████████████████████████████████████████████████████████ $850K
 YugabyteDB  ████████████████████████████████████████████████████████████████████ $709K
@@ -316,7 +316,7 @@ kdb+        ██████████████████████�
 
 ## Migration Considerations
 
-### From Aerospike to TDB+
+### From Aerospike to LumaDB
 
 **Compatibility:**
 - Similar hybrid memory model
@@ -325,13 +325,13 @@ kdb+        ██████████████████████�
 
 **Migration Steps:**
 1. Export data using Aerospike backup tools
-2. Transform AQL queries to TDB+ SQL/PromptQL
-3. Import data using TDB+ bulk loader
+2. Transform AQL queries to LumaDB SQL/PromptQL
+3. Import data using LumaDB bulk loader
 4. Update application clients
 
 **Estimated Effort:** 2-4 weeks
 
-### From ScyllaDB to TDB+
+### From ScyllaDB to LumaDB
 
 **Compatibility:**
 - Wide-column model maps to documents
@@ -341,12 +341,12 @@ kdb+        ██████████████████████�
 **Migration Steps:**
 1. Export data using sstableloader
 2. Convert CQL to SQL
-3. Import using TDB+ migration tools
+3. Import using LumaDB migration tools
 4. Update driver configurations
 
 **Estimated Effort:** 3-6 weeks
 
-### From kdb+ to TDB+
+### From kdb+ to LumaDB
 
 **Compatibility:**
 - Columnar storage similar
@@ -365,7 +365,7 @@ kdb+        ██████████████████████�
 
 ## Conclusion
 
-TDB+ provides the best combination of:
+LumaDB provides the best combination of:
 
 - **Performance**: Fastest across all benchmarks
 - **Features**: Most comprehensive feature set
@@ -373,4 +373,4 @@ TDB+ provides the best combination of:
 - **Cost**: Open source with lowest TCO
 - **Flexibility**: Multiple data models and query languages
 
-For workloads requiring high performance, advanced analytics, and AI capabilities, TDB+ is the clear choice.
+For workloads requiring high performance, advanced analytics, and AI capabilities, LumaDB is the clear choice.

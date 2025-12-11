@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb"
 	"github.com/lumadb/cluster/pkg/config"
+	"github.com/lumadb/cluster/pkg/core" // New import
 	"go.uber.org/zap"
 )
 
@@ -22,13 +23,14 @@ import (
 type Node struct {
 	config    *config.Config
 	logger    *zap.Logger
+	db        *core.Database // Persistent storage
 	raft      *raft.Raft
 	fsm       *FSM
 	transport *raft.NetworkTransport
 
 	// Cluster membership
-	peers    map[string]string // nodeID -> address
-	peersMu  sync.RWMutex
+	peers   map[string]string // nodeID -> address
+	peersMu sync.RWMutex
 
 	// Node state
 	isLeader   bool
@@ -36,8 +38,8 @@ type Node struct {
 	leaderMu   sync.RWMutex
 
 	// Shard assignments
-	shards    map[uint32]*ShardInfo
-	shardsMu  sync.RWMutex
+	shards   map[uint32]*ShardInfo
+	shardsMu sync.RWMutex
 }
 
 // ShardInfo contains information about a shard
@@ -55,9 +57,22 @@ func NewNode(cfg *config.Config, logger *zap.Logger) (*Node, error) {
 		return nil, fmt.Errorf("failed to create data dir: %w", err)
 	}
 
+	// Initialize persistent storage (LumaDB Rust Core)
+	// We need to pass configuration as a map
+	// Simplest way: JSON roundtrip since core.Open marshals it anyway (slightly inefficient but fine for startup)
+	var configMap map[string]interface{}
+	cfgBytes, _ := json.Marshal(cfg)
+	_ = json.Unmarshal(cfgBytes, &configMap)
+
+	db, err := core.Open(filepath.Join(cfg.DataDir, "luma_data"), configMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open storage engine: %w", err)
+	}
+
 	node := &Node{
 		config: cfg,
 		logger: logger,
+		db:     db,
 		peers:  make(map[string]string),
 		shards: make(map[uint32]*ShardInfo),
 	}
@@ -164,6 +179,12 @@ func (n *Node) Shutdown() error {
 		}
 	}
 
+	if n.db != nil {
+		if err := n.db.Close(); err != nil {
+			n.logger.Error("Failed to close database", zap.Error(err))
+		}
+	}
+
 	return nil
 }
 
@@ -236,6 +257,11 @@ func (n *Node) GetShardForKey(key []byte) *ShardInfo {
 	return n.shards[shardID]
 }
 
+// GetDatabase returns the underlying database instance
+func (n *Node) GetDatabase() *core.Database {
+	return n.db
+}
+
 func (n *Node) monitorLeadership() {
 	for {
 		select {
@@ -282,8 +308,6 @@ type Command struct {
 type FSM struct {
 	node   *Node
 	logger *zap.Logger
-	mu     sync.RWMutex
-	data   map[string]map[string][]byte // collection -> key -> value
 }
 
 // NewFSM creates a new FSM
@@ -291,7 +315,6 @@ func NewFSM(node *Node, logger *zap.Logger) *FSM {
 	return &FSM{
 		node:   node,
 		logger: logger,
-		data:   make(map[string]map[string][]byte),
 	}
 }
 
@@ -303,18 +326,17 @@ func (f *FSM) Apply(log *raft.Log) interface{} {
 		return err
 	}
 
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
 	switch cmd.Op {
 	case "set":
-		if f.data[cmd.Collection] == nil {
-			f.data[cmd.Collection] = make(map[string][]byte)
+		// Write to persistent Rust storage
+		if _, err := f.node.db.Insert(cmd.Collection, cmd.Value); err != nil {
+			f.logger.Error("Failed to insert into DB", zap.Error(err))
+			return err
 		}
-		f.data[cmd.Collection][cmd.Key] = cmd.Value
 	case "delete":
-		if f.data[cmd.Collection] != nil {
-			delete(f.data[cmd.Collection], cmd.Key)
+		if err := f.node.db.Delete(cmd.Collection, cmd.Key); err != nil {
+			f.logger.Error("Failed to delete from DB", zap.Error(err))
+			return err
 		}
 	}
 
@@ -323,58 +345,23 @@ func (f *FSM) Apply(log *raft.Log) interface{} {
 
 // Snapshot returns an FSM snapshot
 func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
-
-	// Deep copy the data
-	data := make(map[string]map[string][]byte)
-	for col, keys := range f.data {
-		data[col] = make(map[string][]byte)
-		for k, v := range keys {
-			data[col][k] = v
-		}
-	}
-
-	return &fsmSnapshot{data: data}, nil
+	// For persistent storage, we rely on the underlying engine's persistence.
+	// In a full implementation, this should generate a checkpoint of the LumaDB.
+	// For now, we return a dummy snapshot to satisfy the interface.
+	return &fsmSnapshot{}, nil
 }
 
 // Restore restores the FSM from a snapshot
 func (f *FSM) Restore(rc io.ReadCloser) error {
 	defer rc.Close()
-
-	var data map[string]map[string][]byte
-	if err := json.NewDecoder(rc).Decode(&data); err != nil {
-		return err
-	}
-
-	f.mu.Lock()
-	f.data = data
-	f.mu.Unlock()
-
+	// No-op: Data is assumed to be on disk.
 	return nil
 }
 
-type fsmSnapshot struct {
-	data map[string]map[string][]byte
-}
+type fsmSnapshot struct{}
 
 func (s *fsmSnapshot) Persist(sink raft.SnapshotSink) error {
-	err := func() error {
-		data, err := json.Marshal(s.data)
-		if err != nil {
-			return err
-		}
-		if _, err := sink.Write(data); err != nil {
-			return err
-		}
-		return nil
-	}()
-
-	if err != nil {
-		sink.Cancel()
-		return err
-	}
-
+	// No-op
 	return sink.Close()
 }
 

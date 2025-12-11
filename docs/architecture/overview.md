@@ -1,8 +1,8 @@
-# TDB+ Architecture Overview
+# LumaDB Architecture Overview
 
 ## Introduction
 
-TDB+ is built on a modern multi-language architecture that combines the best aspects of several leading database systems:
+LumaDB is built on a modern multi-language architecture that combines the best aspects of several leading database systems:
 
 - **Aerospike**: Hybrid memory architecture (RAM + SSD)
 - **ScyllaDB**: Shard-per-core design, lock-free data structures
@@ -16,7 +16,7 @@ TDB+ is built on a modern multi-language architecture that combines the best asp
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           TDB+ Database Platform                             │
+│                           LumaDB Database Platform                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
@@ -92,7 +92,7 @@ TDB+ is built on a modern multi-language architecture that combines the best asp
 
 ### 1. Language-Specific Optimization
 
-Each language in TDB+ is chosen for its strengths:
+Each language in LumaDB is chosen for its strengths:
 
 | Language | Purpose | Key Advantages |
 |----------|---------|----------------|
@@ -102,7 +102,7 @@ Each language in TDB+ is chosen for its strengths:
 
 ### 2. Hybrid Memory Architecture
 
-Inspired by Aerospike, TDB+ maintains data across multiple storage tiers:
+Inspired by Aerospike, LumaDB maintains data across multiple storage tiers:
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -128,7 +128,7 @@ Inspired by Aerospike, TDB+ maintains data across multiple storage tiers:
 
 ### 3. Shard-Per-Core Design
 
-Following ScyllaDB's approach, TDB+ assigns dedicated shards to CPU cores:
+Following ScyllaDB's approach, LumaDB assigns dedicated shards to CPU cores:
 
 - **Lock-free operations** within each shard
 - **NUMA-aware allocation** for multi-socket systems
@@ -137,7 +137,7 @@ Following ScyllaDB's approach, TDB+ assigns dedicated shards to CPU cores:
 
 ### 4. Columnar Analytics
 
-Inspired by kdb+, TDB+ provides high-performance analytics:
+Inspired by kdb+, LumaDB provides high-performance analytics:
 
 - **SIMD vectorization** (AVX2/AVX-512)
 - **Specialized compression** (delta, RLE, dictionary)

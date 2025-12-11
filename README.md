@@ -257,7 +257,7 @@ const client = createClient({
 ### Rust Core Configuration
 
 ```toml
-# tdb.toml
+# luma.toml
 [memory]
 memtable_size = 67108864      # 64 MB
 max_memtables = 4

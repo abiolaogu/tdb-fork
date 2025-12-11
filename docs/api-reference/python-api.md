@@ -1,11 +1,11 @@
-# TDB+ Python API Reference
+# LumaDB Python API Reference
 
 ## tdb Module
 
-### TDBClient
+### LumaDBClient
 
 ```python
-class TDBClient:
+class LumaDBClient:
     def __init__(host: str, port: int, username: str = None, password: str = None)
     def collection(name: str) -> Collection
     async def sql(query: str) -> List[Dict]
@@ -35,7 +35,7 @@ class Collection:
 
 ```python
 class PromptQLEngine:
-    def __init__(db_client: TDBClient, llm_config: LLMConfig)
+    def __init__(db_client: LumaDBClient, llm_config: LLMConfig)
     async def query(prompt: str) -> QueryResult
     async def explain(prompt: str) -> str
     async def suggest(context: str) -> List[str]

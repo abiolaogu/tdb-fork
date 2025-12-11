@@ -1,6 +1,6 @@
-# TDB+ Production Deployment Guide
+# LumaDB Production Deployment Guide
 
-## Complete Guide to Deploying TDB+ in Production
+## Complete Guide to Deploying LumaDB in Production
 
 ---
 
@@ -117,8 +117,8 @@ services:
       - tdbplus-data:/data
       - ./config.yaml:/etc/tdbplus/config.yaml
     environment:
-      - TDB_CLUSTER_NAME=production
-      - TDB_NODE_ID=node1
+      - LumaDB_CLUSTER_NAME=production
+      - LumaDB_NODE_ID=node1
     ulimits:
       memlock:
         soft: -1
@@ -139,7 +139,7 @@ volumes:
 ```
 
 ```bash
-# Start TDB+
+# Start LumaDB
 docker-compose up -d
 
 # Check status
@@ -187,11 +187,11 @@ spec:
         - containerPort: 7000
           name: cluster
         env:
-        - name: TDB_NODE_ID
+        - name: LumaDB_NODE_ID
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: TDB_CLUSTER_SEEDS
+        - name: LumaDB_CLUSTER_SEEDS
           value: "tdbplus-0.tdbplus.database.svc.cluster.local,tdbplus-1.tdbplus.database.svc.cluster.local,tdbplus-2.tdbplus.database.svc.cluster.local"
         resources:
           requests:
@@ -289,7 +289,7 @@ sudo chown -R tdbplus:tdbplus /var/log/tdbplus
 # Install systemd service
 sudo cat > /etc/systemd/system/tdbplus.service << 'EOF'
 [Unit]
-Description=TDB+ Database Server
+Description=LumaDB Database Server
 After=network.target
 
 [Service]
@@ -397,11 +397,11 @@ metrics:
 
 ```bash
 # Production environment variables
-export TDB_SERVER_HTTP_PORT=8080
-export TDB_STORAGE_DATA_DIR=/data/tdbplus
-export TDB_MEMORY_MAX_MEMORY_GB=256
-export TDB_CLUSTER_REPLICATION_FACTOR=3
-export TDB_PROMPTQL_LLM_API_KEY=your-production-key
+export LumaDB_SERVER_HTTP_PORT=8080
+export LumaDB_STORAGE_DATA_DIR=/data/tdbplus
+export LumaDB_MEMORY_MAX_MEMORY_GB=256
+export LumaDB_CLUSTER_REPLICATION_FACTOR=3
+export LumaDB_PROMPLQL_LLM_API_KEY=your-production-key
 ```
 
 ---
@@ -523,7 +523,7 @@ security:
 # Generate CA
 openssl genrsa -out ca.key 4096
 openssl req -new -x509 -days 3650 -key ca.key -out ca.crt \
-  -subj "/CN=TDBPlus CA"
+  -subj "/CN=LumaDBPlus CA"
 
 # Generate server certificate
 openssl genrsa -out server.key 2048
@@ -578,16 +578,16 @@ scrape_configs:
 
 | Metric | Description | Alert Threshold |
 |--------|-------------|-----------------|
-| `tdb_read_latency_p99` | Read latency | > 10ms |
-| `tdb_write_latency_p99` | Write latency | > 50ms |
-| `tdb_memory_used_bytes` | Memory usage | > 90% |
-| `tdb_disk_used_bytes` | Disk usage | > 80% |
-| `tdb_connections_active` | Active connections | > 80% of max |
-| `tdb_replication_lag_ms` | Replication lag | > 1000ms |
+| `luma_read_latency_p99` | Read latency | > 10ms |
+| `luma_write_latency_p99` | Write latency | > 50ms |
+| `luma_memory_used_bytes` | Memory usage | > 90% |
+| `luma_disk_used_bytes` | Disk usage | > 80% |
+| `luma_connections_active` | Active connections | > 80% of max |
+| `luma_replication_lag_ms` | Replication lag | > 1000ms |
 
 ### Grafana Dashboard
 
-Import the TDB+ dashboard from: `https://grafana.com/grafana/dashboards/tdbplus`
+Import the LumaDB dashboard from: `https://grafana.com/grafana/dashboards/tdbplus`
 
 ---
 

@@ -29,14 +29,14 @@ export class TDBClient {
     if (typeof config === 'string') {
       this.config = {
         url: config,
-        defaultLanguage: 'tql',
+        defaultLanguage: 'lql',
         timeout: 30000,
         headers: {},
       };
     } else {
       this.config = {
         url: config.url,
-        defaultLanguage: config.defaultLanguage || 'tql',
+        defaultLanguage: config.defaultLanguage || 'lql',
         timeout: config.timeout || 30000,
         headers: config.headers || {},
       };
@@ -67,7 +67,7 @@ export class TDBClient {
    * Execute a TQL (SQL-like) query
    */
   async tql<T = DocumentData>(queryString: string): Promise<QueryResult<T>> {
-    return this.query<T>(queryString, { language: 'tql' });
+    return this.query<T>(queryString, { language: 'lql' });
   }
 
   /**
@@ -163,8 +163,8 @@ export class TDBClient {
 
     const data = await response.json();
 
-    if (!response.ok || data.success === false) {
-      const error = data.error || { message: 'Unknown error' };
+    if (!response.ok || (data as any).success === false) {
+      const error = (data as any).error || { message: 'Unknown error' };
       throw new TDBClientError(error.message, error.code, response.status);
     }
 

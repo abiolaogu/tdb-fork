@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # Go Cluster Node
-  tdb-node:
+  luma-node:
     build:
       context: ../../
       dockerfile: go-cluster/Dockerfile
@@ -10,27 +10,27 @@ services:
       - "8080:8080"
       - "9090:9090"
     environment:
-      TDB_NODE_ID: node-test
-      TDB_HTTP_ADDR: :8080
-      TDB_GRPC_ADDR: :9090
-      TDB_RAFT_ADDR: :10000
+      LUMA_NODE_ID: node-test
+      LUMA_HTTP_ADDR: :8080
+      LUMA_GRPC_ADDR: :9090
+      LUMA_RAFT_ADDR: :10000
     volumes:
       - ./data:/data
     networks:
-      - tdb-test-net
+      - luma-test-net
 
   # Python AI Service
-  tdb-ai:
+  luma-ai:
     build:
       context: ../../
       dockerfile: python-ai/Dockerfile
     ports:
       - "8000:8000"
     environment:
-      TDB_AI_PORT: 8000
+      LUMA_AI_PORT: 8000
     networks:
-      - tdb-test-net
+      - luma-test-net
 
 networks:
-  tdb-test-net:
+  luma-test-net:
     driver: bridge

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lumadb/cluster/pkg/ai"
 	"github.com/lumadb/cluster/pkg/cluster"
 	"github.com/lumadb/cluster/pkg/router"
 	"go.uber.org/zap"
@@ -17,12 +18,13 @@ import (
 type Server struct {
 	node   *cluster.Node
 	router *router.Router
+	rag    *ai.RAGService
 	logger *zap.Logger
 	engine *gin.Engine
 }
 
 // NewServer creates a new API server
-func NewServer(node *cluster.Node, rtr *router.Router, logger *zap.Logger) *Server {
+func NewServer(node *cluster.Node, rtr *router.Router, rag *ai.RAGService, logger *zap.Logger) *Server {
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
 	engine.Use(gin.Recovery())
@@ -30,6 +32,7 @@ func NewServer(node *cluster.Node, rtr *router.Router, logger *zap.Logger) *Serv
 	s := &Server{
 		node:   node,
 		router: rtr,
+		rag:    rag,
 		logger: logger,
 		engine: engine,
 	}
@@ -62,6 +65,10 @@ func (s *Server) setupRoutes() {
 		// Collection management
 		api.GET("/collections", s.handleListCollections)
 		api.POST("/collections/:collection/indexes", s.handleCreateIndex)
+
+		// RAG Ingest and Query
+		api.POST("/rag/ingest", s.handleRAGIngest)
+		api.POST("/rag/query", s.handleRAGQuery)
 	}
 
 	// Metrics
@@ -288,9 +295,51 @@ func (s *Server) handleCreateIndex(c *gin.Context) {
 	})
 }
 
+func (s *Server) handleRAGQuery(c *gin.Context) {
+	var req RAGQueryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if s.rag == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "RAG service not configured"})
+		return
+	}
+
+	result, err := s.rag.Query(req.Collection, req.Question)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (s *Server) handleRAGIngest(c *gin.Context) {
+	var req RAGIngestRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if s.rag == nil {
+		c.JSON(http.StatusNotImplemented, gin.H{"error": "RAG service not configured"})
+		return
+	}
+
+	result, err := s.rag.Ingest(req.Collection, req.Text, req.Metadata)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
+}
+
 func (s *Server) handleMetrics(c *gin.Context) {
 	// TODO: Prometheus metrics
-	c.String(http.StatusOK, "# TDB+ Metrics\n")
+	c.String(http.StatusOK, "# LumaDB Metrics\n")
 }
 
 // Request/Response types
@@ -316,6 +365,17 @@ type CreateIndexRequest struct {
 	Fields []string `json:"fields"`
 	Type   string   `json:"type"`
 	Unique bool     `json:"unique"`
+}
+
+type RAGQueryRequest struct {
+	Collection string `json:"collection"`
+	Question   string `json:"question"`
+}
+
+type RAGIngestRequest struct {
+	Collection string                 `json:"collection"`
+	Text       string                 `json:"text"`
+	Metadata   map[string]interface{} `json:"metadata"`
 }
 
 // NewGRPCServer creates a new gRPC server

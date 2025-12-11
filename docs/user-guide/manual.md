@@ -1,6 +1,6 @@
-# TDB+ User Manual
+# LumaDB User Manual
 
-## Complete Guide to Using TDB+
+## Complete Guide to Using LumaDB
 
 ---
 
@@ -21,7 +21,7 @@
 
 ## Introduction
 
-TDB+ is a modern, high-performance database that combines:
+LumaDB is a modern, high-performance database that combines:
 
 - **Speed**: Sub-millisecond latencies
 - **Flexibility**: Multiple data models (document, columnar, key-value)
@@ -47,10 +47,10 @@ TDB+ is a modern, high-performance database that combines:
 #### Using Docker
 
 ```bash
-# Pull the TDB+ image
+# Pull the LumaDB image
 docker pull tdbplus/tdbplus:latest
 
-# Run TDB+ server
+# Run LumaDB server
 docker run -d \
   --name tdbplus \
   -p 8080:8080 \
@@ -112,7 +112,7 @@ sudo mv tdbplus /usr/local/bin/
 tdbplus server --config /etc/tdbplus/config.yaml
 ```
 
-### Connecting to TDB+
+### Connecting to LumaDB
 
 #### Python
 
@@ -120,7 +120,7 @@ tdbplus server --config /etc/tdbplus/config.yaml
 from tdbai import PromptQLEngine, LLMConfig
 import tdb
 
-# Connect to TDB+
+# Connect to LumaDB
 client = tdb.connect(
     host="localhost",
     port=8080,
@@ -143,7 +143,7 @@ engine = PromptQLEngine(
 ```go
 import "github.com/tdbplus/tdb-go"
 
-// Connect to TDB+
+// Connect to LumaDB
 client, err := tdb.Connect(&tdb.Config{
     Host:     "localhost",
     Port:     8080,
@@ -216,7 +216,7 @@ doc_id = await client.collection("users").insert(user)
 
 ### Schema Inference
 
-TDB+ can automatically infer schemas:
+LumaDB can automatically infer schemas:
 
 ```python
 from tdbai import SchemaInference
@@ -238,7 +238,7 @@ print(schema.fields)
 
 ## Query Languages
 
-TDB+ supports multiple query interfaces:
+LumaDB supports multiple query interfaces:
 
 ### 1. PromptQL (Natural Language + AI)
 

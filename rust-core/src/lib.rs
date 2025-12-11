@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-//! TDB+ Core Storage Engine
+//! LumaDB Core Storage Engine
 //!
 //! A high-performance, distributed storage engine written in Rust.
 //! Designed to outperform Aerospike, ScyllaDB, DragonflyDB, YugabyteDB, and kdb+.
@@ -17,7 +17,7 @@
 //!
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────────────┐
-//! │                    TDB+ Storage Engine v2.0                          │
+//! │                   LumaDB Storage Engine v2.0                          │
 //! ├─────────────────────────────────────────────────────────────────────┤
 //! │                                                                      │
 //! │  ┌─────────────────────────────────────────────────────────────┐    │
@@ -63,6 +63,7 @@ pub mod storage;
 pub mod index;
 pub mod memory;
 pub mod wal;
+pub mod ai;
 pub mod error;
 
 pub mod config;
@@ -100,7 +101,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use dashmap::DashMap;
 
-/// TDB+ Database instance
+/// LumaDB Database instance
 pub struct Database {
     config: Config,
     shards: Arc<ShardManager>,
@@ -116,9 +117,9 @@ pub struct Database {
 
 impl Database {
     /// Create a new database instance
-    pub fn new(config: Config) -> Result<Self> {
+    pub async fn new(config: Config) -> Result<Self> {
         let wal = Arc::new(WriteAheadLog::new(&config)?);
-        let shards = Arc::new(ShardManager::new(&config)?);
+        let shards = Arc::new(ShardManager::new(&config).await?);
 
         let scripting = Arc::new(scripting::ScriptingEngine::new());
         let procedures = Arc::new(scripting::procedures::Procedures::new(scripting.clone()));
@@ -138,7 +139,7 @@ impl Database {
 
     /// Open an existing database or create new
     pub async fn open(config: Config) -> Result<Self> {
-        let db = Self::new(config)?;
+        let db = Self::new(config).await?;
         db.recover_from_wal().await?;
         Ok(db)
     }
@@ -155,6 +156,19 @@ impl Database {
                 ))
             })
             .clone()
+    }
+
+    /// Drop a collection
+    pub async fn drop_collection(&self, name: &str) -> Result<()> {
+        if self.collections.remove(name).is_some() {
+            // Remove all data starting with collection name prefix
+            // Collection keys are formatted as "{name}:{id}"
+            let prefix = format!("{}:", name);
+            self.shards.delete_prefix(prefix.as_bytes()).await?;
+            Ok(())
+        } else {
+            Err(LumaError::CollectionNotFound(name.to_string()))
+        }
     }
 
     /// Insert a document
@@ -266,6 +280,11 @@ impl Database {
             entry.value().compact().await?;
         }
         Ok(())
+    }
+
+    /// Search for vectors
+    pub fn search_vector(&self, query: &[f32], k: usize) -> Vec<(Vec<u8>, f32)> {
+        self.shards.search_vector(query, k)
     }
 }
 

@@ -14,3 +14,6 @@ pub use engine::StorageEngine;
 pub use sstable::{SSTable, SSTableBuilder, SSTableReader};
 pub use collection::Collection;
 pub use manifest::Manifest;
+pub use policy::PolicyEngine;
+
+pub mod policy;

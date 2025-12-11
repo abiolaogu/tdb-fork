@@ -21,6 +21,9 @@ pub enum LumaError {
     #[error("File not found: {0}")]
     FileNotFound(String),
 
+    #[error("Storage error: {0}")]
+    Storage(String),
+
     // Document errors
     #[error("Document not found: {0}")]
     DocumentNotFound(String),
@@ -150,6 +153,7 @@ impl LumaError {
             LumaError::Corruption(_) => 2,
             LumaError::ChecksumMismatch { .. } => 3,
             LumaError::FileNotFound(_) => 4,
+            LumaError::Storage(_) => 204, // New code
             LumaError::DocumentNotFound(_) => 5,
             LumaError::DocumentExists(_) => 6,
             LumaError::CollectionNotFound(_) => 7,

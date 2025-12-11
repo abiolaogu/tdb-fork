@@ -3,7 +3,7 @@
 ## Video Details
 - **Duration**: 12 minutes
 - **Level**: Intermediate
-- **Prerequisites**: Basic TDB+ knowledge (Series 1)
+- **Prerequisites**: Basic LumaDB knowledge (Series 1)
 
 ---
 
@@ -22,12 +22,12 @@
 
 ---
 
-### [0:45 - 2:30] WHAT IS PROMPTQL
+### [0:45 - 2:30] WHAT IS PROMPLQL
 
 **[SCREEN: PromptQL architecture diagram]**
 
 **NARRATOR:**
-"PromptQL is TDB+'s AI-powered query language. But it's not just a SQL translator. It's a complete reasoning engine."
+"PromptQL is LumaDB's AI-powered query language. But it's not just a SQL translator. It's a complete reasoning engine."
 
 **[SCREEN: Diagram showing components: Parser → Planner → Reasoner → Executor]**
 

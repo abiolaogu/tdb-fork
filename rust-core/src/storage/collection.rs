@@ -40,11 +40,33 @@ impl Collection {
     pub async fn insert(&self, doc: Document) -> Result<DocumentId> {
         let id = doc.id.clone();
         let key = self.doc_key(&id);
+
+        // Check for vector field "_vector"
+        let mut vector: Option<Vec<f32>> = None;
+        if let Some(val) = doc.data.get("_vector") {
+            if let Value::Array(arr) = val {
+                let vec_data: Option<Vec<f32>> = arr.iter().map(|v| {
+                    match v {
+                        Value::Float(f) => Some(*f as f32),
+                        Value::Int(i) => Some(*i as f32), // Handle ints too just in case
+                        _ => None
+                    }
+                }).collect();
+                vector = vec_data;
+            }
+        }
+
         let value = bincode::serialize(&doc)?;
 
         // Get shard for this key
         let shard = self.shards.get_shard(&key);
         shard.put(key, value).await?;
+
+        // Index vector if present
+        if let Some(vec) = vector {
+            // Note: DocumentId in VectorIndex is currently String.
+            shard.index_vector(id.clone(), vec)?;
+        }
 
         // Update secondary indexes
         self.update_indexes(&id, &doc);

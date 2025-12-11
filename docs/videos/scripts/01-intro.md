@@ -1,4 +1,4 @@
-# Video 1.1: Introduction to TDB+
+# Video 1.1: Introduction to LumaDB
 
 ## Video Details
 - **Duration**: 8 minutes
@@ -11,29 +11,29 @@
 
 ### [0:00 - 0:30] INTRO
 
-**[SCREEN: Title card with TDB+ logo and "Introduction to TDB+" text]**
+**[SCREEN: Title card with LumaDB logo and "Introduction to LumaDB" text]**
 
 **NARRATOR:**
-"Welcome to TDB+, the next-generation database platform that combines blazing-fast performance with AI-powered query capabilities. In this video, you'll learn what makes TDB+ unique and why it's the future of data management."
+"Welcome to LumaDB, the next-generation database platform that combines blazing-fast performance with AI-powered query capabilities. In this video, you'll learn what makes LumaDB unique and why it's the future of data management."
 
 **[TRANSITION: Fade to presenter or animated architecture diagram]**
 
 ---
 
-### [0:30 - 2:00] WHAT IS TDB+
+### [0:30 - 2:00] WHAT IS LumaDB
 
 **[SCREEN: Architecture diagram showing three-layer stack]**
 
 **NARRATOR:**
-"TDB+ is built on a revolutionary three-language architecture. At its core, Rust provides unmatched speed and memory safety. Go handles scalability and networking. And Python powers our AI capabilities including PromptQL."
+"LumaDB is built on a revolutionary three-language architecture. At its core, Rust provides unmatched speed and memory safety. Go handles scalability and networking. And Python powers our AI capabilities including PromptQL."
 
 **[SCREEN: Highlight each layer as mentioned]**
 
-"This combination allows TDB+ to achieve something no other database can: sub-millisecond latencies with natural language query understanding."
+"This combination allows LumaDB to achieve something no other database can: sub-millisecond latencies with natural language query understanding."
 
 **[SCREEN: Performance comparison chart]**
 
-"In benchmarks, TDB+ outperforms Aerospike, ScyllaDB, DragonflyDB, and even kdb+ in most scenarios. But performance is just the beginning."
+"In benchmarks, LumaDB outperforms Aerospike, ScyllaDB, DragonflyDB, and even kdb+ in most scenarios. But performance is just the beginning."
 
 ---
 
@@ -42,10 +42,10 @@
 **[SCREEN: Feature icons appearing as each is mentioned]**
 
 **NARRATOR:**
-"Let me walk you through TDB+'s standout features."
+"Let me walk you through LumaDB's standout features."
 
 **Feature 1: PromptQL**
-"First, PromptQL. Instead of writing complex SQL queries, just describe what you want in plain English. Ask 'Show me customers who spent more than average last month' and TDB+ figures out the rest."
+"First, PromptQL. Instead of writing complex SQL queries, just describe what you want in plain English. Ask 'Show me customers who spent more than average last month' and LumaDB figures out the rest."
 
 **[SCREEN: Live demo - typing PromptQL query]**
 
@@ -55,26 +55,26 @@
 **[SCREEN: Diagram showing RAM → SSD → HDD tiers]**
 
 **Feature 3: SIMD Analytics**
-"Third, vectorized analytics. TDB+ uses CPU SIMD instructions to process analytical queries at incredible speeds. Aggregate a billion rows in just over one second."
+"Third, vectorized analytics. LumaDB uses CPU SIMD instructions to process analytical queries at incredible speeds. Aggregate a billion rows in just over one second."
 
 **[SCREEN: Side-by-side speed comparison with other databases]**
 
 **Feature 4: Multi-Model**
-"Finally, TDB+ is truly multi-model. Documents, columnar data, time-series, key-value - all in one database. Choose the right model for each use case."
+"Finally, LumaDB is truly multi-model. Documents, columnar data, time-series, key-value - all in one database. Choose the right model for each use case."
 
 ---
 
 ### [4:00 - 5:30] DEMO: FIRST LOOK
 
-**[SCREEN: Terminal with TDB+ client]**
+**[SCREEN: Terminal with LumaDB client]**
 
 **NARRATOR:**
-"Let's see TDB+ in action. I'll connect and run a few queries."
+"Let's see LumaDB in action. I'll connect and run a few queries."
 
 **[TYPE: Connection command]**
 ```python
-from tdb import TDBClient
-client = TDBClient(host="localhost", port=8080)
+from tdb import LumaDBClient
+client = LumaDBClient(host="localhost", port=8080)
 ```
 
 **NARRATOR:**
@@ -97,7 +97,7 @@ print(result)
 ```
 
 **NARRATOR:**
-"No SQL required. TDB+ understood my intent and returned a clear answer."
+"No SQL required. LumaDB understood my intent and returned a clear answer."
 
 ---
 
@@ -106,7 +106,7 @@ print(result)
 **[SCREEN: Use case icons and descriptions]**
 
 **NARRATOR:**
-"TDB+ excels in several scenarios."
+"LumaDB excels in several scenarios."
 
 **Use Case 1: Real-Time Analytics**
 "Real-time analytics dashboards that need instant aggregations across billions of events."
@@ -127,7 +127,7 @@ print(result)
 **[SCREEN: Bullet point summary]**
 
 **NARRATOR:**
-"To recap, TDB+ gives you:
+"To recap, LumaDB gives you:
 - Sub-millisecond performance with hybrid memory
 - Natural language queries with PromptQL
 - SIMD-accelerated analytics
@@ -141,7 +141,7 @@ print(result)
 **[SCREEN: Next video thumbnail and links]**
 
 **NARRATOR:**
-"Ready to get started? In the next video, we'll walk through installing TDB+ on your system. Click the link to continue, and don't forget to like and subscribe for more TDB+ tutorials."
+"Ready to get started? In the next video, we'll walk through installing LumaDB on your system. Click the link to continue, and don't forget to like and subscribe for more LumaDB tutorials."
 
 **[SCREEN: Subscribe button animation, end card with links]**
 
@@ -157,7 +157,7 @@ print(result)
 
 ## GRAPHICS NEEDED
 
-1. TDB+ logo (transparent PNG)
+1. LumaDB logo (transparent PNG)
 2. Architecture diagram (3-layer)
 3. Performance comparison charts
 4. Feature icons (6)

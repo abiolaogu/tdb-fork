@@ -1,4 +1,4 @@
-//! Foreign Function Interface for TDB+
+//! Foreign Function Interface for LumaDB
 //!
 //! Provides C-compatible FFI bindings for Go and Python integration.
 //! Uses a handle-based approach for safe cross-language resource management.
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn luma_drop_collection(
         None => return LumaResult::ErrInvalidHandle,
     };
 
-    let _name_str = match CStr::from_ptr(name).to_str() {
+    let name_str = match CStr::from_ptr(name).to_str() {
         Ok(s) => s,
         Err(_) => return LumaResult::ErrInvalidArgument,
     };
@@ -203,8 +203,7 @@ pub unsafe extern "C" fn luma_drop_collection(
     };
 
     match rt.block_on(async {
-        // Drop not supported yet
-        Ok::<(), LumaError>(())
+        engine.drop_collection(name_str).await
     }) {
         Ok(_) => LumaResult::Ok,
         Err(e) => e.into(),
@@ -470,14 +469,62 @@ pub unsafe extern "C" fn luma_query(
     };
 
     match rt.block_on(engine.scan(collection_str, |_| true)) {
-        Ok(_) => {
-             // Mock empty result
-             let json = b"[]".to_vec();
+        Ok(docs) => {
+             let json = serde_json::to_vec(&docs).unwrap_or_else(|_| b"[]".to_vec());
              *results_out = LumaBuffer::new(json);
              LumaResult::Ok
         },
         Err(e) => e.into(),
     }
+}
+
+/// Search for similar vectors
+#[no_mangle]
+pub unsafe extern "C" fn luma_search_vector(
+    handle: LumaHandle,
+    vector_json: *const c_char,
+    k: usize,
+    results_out: *mut LumaBuffer,
+) -> LumaResult {
+    let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+        Some(e) => e,
+        None => return LumaResult::ErrInvalidHandle,
+    };
+
+    let vector_str = match CStr::from_ptr(vector_json).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let query_vector: Vec<f32> = match serde_json::from_str(vector_str) {
+        Ok(v) => v,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(_) => return LumaResult::ErrInternal,
+    };
+
+    // Call search_vector on HybridStorage
+    let results = engine.search_vector(&query_vector, k);
+    
+    // Convert results (Vec<(Vec<u8>, f32)>) to JSON friendly format
+    // ID is stored as bytes, convert to String roughly
+    let json_results: Vec<serde_json::Value> = results.into_iter().map(|(id_bytes, score)| {
+        serde_json::json!({
+            "id": String::from_utf8_lossy(&id_bytes),
+            "score": score
+        })
+    }).collect();
+
+    let json = serde_json::to_vec(&json_results).unwrap_or_else(|_| b"[]".to_vec());
+    
+    if !results_out.is_null() {
+        *results_out = LumaBuffer::new(json);
+    }
+
+    LumaResult::Ok
 }
 
 // ============================================================================
@@ -532,7 +579,7 @@ pub unsafe extern "C" fn luma_batch_insert(
 // Memory Management
 // ============================================================================
 
-/// Free a buffer returned by TDB functions
+/// Free a buffer returned by Luma functions
 #[no_mangle]
 pub unsafe extern "C" fn luma_buffer_free(buffer: *mut LumaBuffer) {
     if !buffer.is_null() && !(*buffer).data.is_null() {

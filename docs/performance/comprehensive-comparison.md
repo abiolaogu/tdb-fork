@@ -1,8 +1,8 @@
 # Comprehensive Database Comparison
 
-## TDB+ vs Industry-Leading Databases
+## LumaDB vs Industry-Leading Databases
 
-This document provides an exhaustive comparison of TDB+ against all major database systems across every measurable metric.
+This document provides an exhaustive comparison of LumaDB against all major database systems across every measurable metric.
 
 ---
 
@@ -10,7 +10,7 @@ This document provides an exhaustive comparison of TDB+ against all major databa
 
 | Database | Type | Origin | License |
 |----------|------|--------|---------|
-| **TDB+** | Multi-model | TDB+ Project | Open Source (Apache 2.0) |
+| **LumaDB** | Multi-model | LumaDB Project | Open Source (Apache 2.0) |
 | **Aerospike** | Key-Value | Aerospike Inc. | Proprietary |
 | **ScyllaDB** | Wide-Column | ScyllaDB Inc. | Open Source (AGPL) |
 | **DragonflyDB** | In-Memory KV | DragonflyDB Inc. | Open Source (BSL) |
@@ -34,7 +34,7 @@ This document provides an exhaustive comparison of TDB+ against all major databa
 
 | Database | p50 | p95 | p99 | p99.9 |
 |----------|-----|-----|-----|-------|
-| **TDB+** | **0.08ms** | **0.15ms** | **0.30ms** | **0.50ms** |
+| **LumaDB** | **0.08ms** | **0.15ms** | **0.30ms** | **0.50ms** |
 | Aerospike | 0.15ms | 0.35ms | 1.0ms | 2.5ms |
 | ScyllaDB | 0.25ms | 0.8ms | 2.0ms | 5.0ms |
 | DragonflyDB | 0.12ms | 0.25ms | 0.5ms | 1.2ms |
@@ -54,7 +54,7 @@ This document provides an exhaustive comparison of TDB+ against all major databa
 Read Latency p99 (Lower is Better)
 ═══════════════════════════════════════════════════════════════════════════
 
-TDB+        ██ 0.30ms
+LumaDB        ██ 0.30ms
 Redis       ██ 0.30ms
 kdb+        ███ 0.40ms
 DragonflyDB ████ 0.50ms
@@ -74,7 +74,7 @@ ClickHouse  ██████████████████████�
 
 | Database | Single Node | 3-Node Cluster | 10-Node Cluster |
 |----------|-------------|----------------|-----------------|
-| **TDB+** | **580K** | **2.1M** | **7.5M** |
+| **LumaDB** | **580K** | **2.1M** | **7.5M** |
 | Aerospike | 320K | 1.0M | 3.5M |
 | ScyllaDB | 280K | 800K | 2.8M |
 | DragonflyDB | 450K | N/A | N/A |
@@ -94,7 +94,7 @@ ClickHouse  ██████████████████████�
 Write Throughput - 3 Node Cluster (Higher is Better)
 ═══════════════════════════════════════════════════════════════════════════
 
-TDB+        ████████████████████████████████████████████████████████████████████████████████████████████████████ 2.1M ops/s
+LumaDB        ████████████████████████████████████████████████████████████████████████████████████████████████████ 2.1M ops/s
 Aerospike   ████████████████████████████████████████████████ 1.0M ops/s
 ScyllaDB    ██████████████████████████████████████ 800K ops/s
 ClickHouse  ██████████████████████████ 550K ops/s
@@ -110,7 +110,7 @@ CockroachDB ████ 85K ops/s
 
 | Database | Full Scan 100M rows | Aggregation 1B rows | Complex Join |
 |----------|---------------------|---------------------|--------------|
-| **TDB+** | **1.2s** | **1.2s** | **2.5s** |
+| **LumaDB** | **1.2s** | **1.2s** | **2.5s** |
 | Aerospike | 6.7s | N/A | N/A |
 | ScyllaDB | 8.3s | 45s | 60s |
 | DragonflyDB | 3.6s | N/A | N/A |
@@ -130,7 +130,7 @@ CockroachDB ████ 85K ops/s
 Analytical Query - 1B Row Aggregation (Lower is Better)
 ═══════════════════════════════════════════════════════════════════════════
 
-TDB+        ██ 1.2s
+LumaDB        ██ 1.2s
 ClickHouse  ███ 1.5s
 kdb+        █████ 2.5s
 TimescaleDB ██████████████████████████████ 15s
@@ -145,7 +145,7 @@ YugabyteDB  ██████████████████████�
 
 | Database | 100GB Data RAM Usage | Efficiency % | Overhead |
 |----------|---------------------|--------------|----------|
-| **TDB+** | **118GB** | **85%** | 18% |
+| **LumaDB** | **118GB** | **85%** | 18% |
 | DragonflyDB | 125GB | 80% | 25% |
 | ScyllaDB | 133GB | 75% | 33% |
 | Aerospike | 143GB | 70% | 43% |
@@ -165,7 +165,7 @@ YugabyteDB  ██████████████████████�
 
 ### 2.1 Core Features
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
 |---------|------|-----------|----------|-------------|------------|------|------|--------|
 | **Document Model** | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
 | **Key-Value** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -183,7 +183,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 ### 2.2 Query Capabilities
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
 |---------|------|-----------|----------|-------------|------------|------|------|--------|
 | **SQL Support** | ✅ | ❌ | ⚠️ CQL | ❌ | ✅ | ✅ | ❌ | ✅ |
 | **Natural Language (PromptQL)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -197,7 +197,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 ### 2.3 AI & Advanced Features
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
 |---------|------|-----------|----------|-------------|------------|------|------|--------|
 | **PromptQL (AI Queries)** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **LLM Integration** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -210,7 +210,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 ### 2.4 Scalability & Distribution
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
 |---------|------|-----------|----------|-------------|------------|------|------|--------|
 | **Horizontal Scaling** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ⚠️ | ✅ |
 | **Auto-Sharding** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
@@ -222,7 +222,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 ### 2.5 Operations & Management
 
-| Feature | TDB+ | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
+| Feature | LumaDB | Aerospike | ScyllaDB | DragonflyDB | YugabyteDB | TiDB | kdb+ | Oracle |
 |---------|------|-----------|----------|-------------|------------|------|------|--------|
 | **Docker Support** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | **Kubernetes Operator** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
@@ -240,7 +240,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 | Database | Storage Engine | Memory Model | Persistence |
 |----------|---------------|--------------|-------------|
-| **TDB+** | LSM + Columnar | Hybrid (RAM/SSD/HDD) | WAL + SST |
+| **LumaDB** | LSM + Columnar | Hybrid (RAM/SSD/HDD) | WAL + SST |
 | Aerospike | Custom | Hybrid (RAM/SSD) | WAL + Data files |
 | ScyllaDB | LSM (Custom) | Disk-first | Commitlog + SST |
 | DragonflyDB | Custom | RAM-only | Snapshots |
@@ -257,7 +257,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 | Database | Default | Strongest | CAP Trade-off |
 |----------|---------|-----------|---------------|
-| **TDB+** | Strong | Linearizable | CP (configurable) |
+| **LumaDB** | Strong | Linearizable | CP (configurable) |
 | Aerospike | Strong | Linearizable | CP |
 | ScyllaDB | Eventual | Quorum | AP |
 | DragonflyDB | Strong | Linearizable | CP |
@@ -274,7 +274,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 | Database | Method | Consensus | Geo-Replication |
 |----------|--------|-----------|-----------------|
-| **TDB+** | Raft-based | Raft | Async + Sync |
+| **LumaDB** | Raft-based | Raft | Async + Sync |
 | Aerospike | Paxos-based | Paxos | XDR |
 | ScyllaDB | Ring + Paxos | LWT | DC-aware |
 | DragonflyDB | None | N/A | N/A |
@@ -292,7 +292,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 | Database | Free Tier | Standard | Enterprise |
 |----------|-----------|----------|------------|
-| **TDB+** | ✅ Unlimited | $0 | $50K support |
+| **LumaDB** | ✅ Unlimited | $0 | $50K support |
 | Aerospike | Community | N/A | $150K-$500K |
 | ScyllaDB | Open Source | N/A | $100K-$300K |
 | DragonflyDB | Open Source | N/A | $50K-$150K |
@@ -309,7 +309,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 
 | Database | Hardware | License | Support | Total |
 |----------|----------|---------|---------|-------|
-| **TDB+** | $225K | $0 | $0-$150K | **$225K-$375K** |
+| **LumaDB** | $225K | $0 | $0-$150K | **$225K-$375K** |
 | Aerospike | $300K | $450K-$1.5M | Included | $750K-$1.8M |
 | ScyllaDB | $309K | $0-$900K | $150K | $459K-$1.35M |
 | DragonflyDB | $250K | $0-$450K | $90K | $340K-$790K |
@@ -323,7 +323,7 @@ Legend: ✅ Full Support | ⚠️ Limited/External | ❌ Not Supported
 3-Year TCO for 100TB Dataset (Lower is Better)
 ═══════════════════════════════════════════════════════════════════════════
 
-TDB+        ████████████████ $225K-$375K
+LumaDB        ████████████████ $225K-$375K
 DragonflyDB ████████████████████████████████ $340K-$790K
 ScyllaDB    ████████████████████████████████████████ $459K-$1.35M
 TiDB        ████████████████████████████████████████████████ $500K-$1.1M
@@ -342,7 +342,7 @@ Oracle      ██████████████████████�
 | Database | Workload A | Workload B | Workload C | Workload D | Workload F |
 |----------|------------|------------|------------|------------|------------|
 | | (50/50 R/W) | (95/5 R/W) | (100% Read) | (Read Latest) | (RMW) |
-| **TDB+** | **1.8M** | **2.4M** | **3.2M** | **2.8M** | **1.2M** |
+| **LumaDB** | **1.8M** | **2.4M** | **3.2M** | **2.8M** | **1.2M** |
 | Aerospike | 850K | 1.1M | 1.4M | 1.2M | 620K |
 | ScyllaDB | 520K | 780K | 980K | 850K | 380K |
 | DragonflyDB | 1.2M | 1.8M | 2.5M | 2.0M | 850K |
@@ -357,7 +357,7 @@ Oracle      ██████████████████████�
 
 | Database | 100 Warehouses | 1000 Warehouses | 10000 Warehouses |
 |----------|----------------|-----------------|------------------|
-| **TDB+** | **450K** | **4.2M** | **38M** |
+| **LumaDB** | **450K** | **4.2M** | **38M** |
 | YugabyteDB | 120K | 1.1M | 9.5M |
 | TiDB | 100K | 950K | 8.2M |
 | CockroachDB | 85K | 800K | 7.0M |
@@ -368,7 +368,7 @@ Oracle      ██████████████████████�
 
 | Database | Ingest Rate | Query (1h range) | Query (1d range) | Downsampling |
 |----------|-------------|------------------|------------------|--------------|
-| **TDB+** | **2.5M pts/s** | **5ms** | **25ms** | **100ms** |
+| **LumaDB** | **2.5M pts/s** | **5ms** | **25ms** | **100ms** |
 | kdb+ | 1.5M pts/s | 8ms | 40ms | 150ms |
 | TimescaleDB | 400K pts/s | 20ms | 100ms | 500ms |
 | InfluxDB | 500K pts/s | 15ms | 80ms | 400ms |
@@ -380,7 +380,7 @@ Oracle      ██████████████████████�
 
 ### 6.1 Workload Fit (1-5 Scale, 5=Best)
 
-| Use Case | TDB+ | Aerospike | ScyllaDB | YugabyteDB | TiDB | kdb+ | Oracle |
+| Use Case | LumaDB | Aerospike | ScyllaDB | YugabyteDB | TiDB | kdb+ | Oracle |
 |----------|------|-----------|----------|------------|------|------|--------|
 | **OLTP (High-Frequency)** | 5 | 5 | 4 | 3 | 3 | 4 | 4 |
 | **OLAP (Analytics)** | 5 | 2 | 3 | 3 | 4 | 5 | 5 |
@@ -399,14 +399,14 @@ Oracle      ██████████████████████�
 
 | Industry | Best Databases |
 |----------|---------------|
-| **Finance/Trading** | TDB+, kdb+, Aerospike |
-| **Gaming** | TDB+, Aerospike, DragonflyDB |
-| **E-commerce** | TDB+, MongoDB, PostgreSQL |
-| **IoT/Telemetry** | TDB+, TimescaleDB, InfluxDB |
-| **Social Media** | TDB+, ScyllaDB, Cassandra |
-| **Enterprise Apps** | TDB+, Oracle, PostgreSQL |
-| **AI/ML Platforms** | TDB+, PostgreSQL (pgvector) |
-| **AdTech** | TDB+, Aerospike, DragonflyDB |
+| **Finance/Trading** | LumaDB, kdb+, Aerospike |
+| **Gaming** | LumaDB, Aerospike, DragonflyDB |
+| **E-commerce** | LumaDB, MongoDB, PostgreSQL |
+| **IoT/Telemetry** | LumaDB, TimescaleDB, InfluxDB |
+| **Social Media** | LumaDB, ScyllaDB, Cassandra |
+| **Enterprise Apps** | LumaDB, Oracle, PostgreSQL |
+| **AI/ML Platforms** | LumaDB, PostgreSQL (pgvector) |
+| **AdTech** | LumaDB, Aerospike, DragonflyDB |
 
 ---
 
@@ -417,7 +417,7 @@ Oracle      ██████████████████████�
 | Database | Performance | Features | Scalability | Operations | Cost | **Total** |
 |----------|-------------|----------|-------------|------------|------|-----------|
 | | (30%) | (25%) | (20%) | (15%) | (10%) | |
-| **TDB+** | 95 | 95 | 90 | 85 | 95 | **93.0** |
+| **LumaDB** | 95 | 95 | 90 | 85 | 95 | **93.0** |
 | Aerospike | 85 | 60 | 85 | 75 | 50 | 73.5 |
 | ScyllaDB | 75 | 65 | 85 | 80 | 70 | 74.5 |
 | DragonflyDB | 90 | 40 | 20 | 70 | 80 | 59.0 |
@@ -432,7 +432,7 @@ Oracle      ██████████████████████�
 Overall Database Ranking
 ═══════════════════════════════════════════════════════════════════════════
 
-TDB+        ████████████████████████████████████████████████████████████████████████████████████████████ 93.0
+LumaDB        ████████████████████████████████████████████████████████████████████████████████████████████ 93.0
 ScyllaDB    ██████████████████████████████████████████████████████████████████████████ 74.5
 Aerospike   █████████████████████████████████████████████████████████████████████████ 73.5
 Oracle      ████████████████████████████████████████████████████████████████████████ 71.0
@@ -448,7 +448,7 @@ DragonflyDB ██████████████████████�
 
 ## Conclusion
 
-TDB+ demonstrates leadership across all major categories:
+LumaDB demonstrates leadership across all major categories:
 
 1. **Performance**: Fastest read latency (0.3ms p99), highest throughput (2.1M ops/s)
 2. **Features**: Only database with native AI queries (PromptQL)
@@ -456,4 +456,4 @@ TDB+ demonstrates leadership across all major categories:
 4. **Cost**: 50-90% lower TCO than commercial alternatives
 5. **Flexibility**: Multi-model support (document, columnar, time-series, key-value)
 
-**TDB+ is the clear choice for organizations seeking maximum performance with AI-powered intelligence.**
+**LumaDB is the clear choice for organizations seeking maximum performance with AI-powered intelligence.**

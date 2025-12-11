@@ -1,8 +1,8 @@
-# TDB+ Video Training Series
+# LumaDB Video Training Series
 
 ## Complete Video Course Library
 
-This directory contains scripts and outlines for the TDB+ video training series. Videos are designed to be 5-15 minutes each, covering specific topics in depth.
+This directory contains scripts and outlines for the LumaDB video training series. Videos are designed to be 5-15 minutes each, covering specific topics in depth.
 
 ---
 
@@ -11,7 +11,7 @@ This directory contains scripts and outlines for the TDB+ video training series.
 ### Series 1: Getting Started (Beginner)
 | Video | Title | Duration | Status |
 |-------|-------|----------|--------|
-| 1.1 | Introduction to TDB+ | 8 min | [Script](./scripts/01-intro.md) |
+| 1.1 | Introduction to LumaDB | 8 min | [Script](./scripts/01-intro.md) |
 | 1.2 | Installation & Setup | 10 min | [Script](./scripts/02-installation.md) |
 | 1.3 | Your First Database | 12 min | [Script](./scripts/03-first-database.md) |
 | 1.4 | Basic CRUD Operations | 15 min | [Script](./scripts/04-crud.md) |
@@ -21,7 +21,7 @@ This directory contains scripts and outlines for the TDB+ video training series.
 | Video | Title | Duration | Status |
 |-------|-------|----------|--------|
 | 2.1 | Introduction to PromptQL | 12 min | [Script](./scripts/06-promptql-intro.md) |
-| 2.2 | SQL in TDB+ | 10 min | [Script](./scripts/07-sql.md) |
+| 2.2 | SQL in LumaDB | 10 min | [Script](./scripts/07-sql.md) |
 | 2.3 | Complex Queries | 15 min | [Script](./scripts/08-complex-queries.md) |
 | 2.4 | Aggregations & Analytics | 15 min | [Script](./scripts/09-aggregations.md) |
 | 2.5 | Time-Series Queries | 12 min | [Script](./scripts/10-timeseries.md) |
@@ -32,7 +32,7 @@ This directory contains scripts and outlines for the TDB+ video training series.
 | 3.1 | Indexing Strategies | 15 min | [Script](./scripts/11-indexing.md) |
 | 3.2 | Query Optimization | 15 min | [Script](./scripts/12-optimization.md) |
 | 3.3 | Performance Monitoring | 12 min | [Script](./scripts/13-monitoring.md) |
-| 3.4 | Scaling TDB+ | 15 min | [Script](./scripts/14-scaling.md) |
+| 3.4 | Scaling LumaDB | 15 min | [Script](./scripts/14-scaling.md) |
 
 ### Series 4: Production (Expert)
 | Video | Title | Duration | Status |

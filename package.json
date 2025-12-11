@@ -4,6 +4,10 @@
   "description": "LumaDB - High-performance distributed database, with multiple query languages and enterprise features",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./promptql": "./dist/promptql/index.js"
+  },
   "bin": {
     "lumadb": "./dist/cli/index.js",
     "luma-server": "./dist/server/index.js"

@@ -1,13 +1,13 @@
-# TDB+ Developer Training Manual
+# LumaDB Developer Training Manual
 
-## Comprehensive Training Guide for TDB+ Development
+## Comprehensive Training Guide for LumaDB Development
 
 ---
 
 ## Course Overview
 
 ### Target Audience
-- Software developers building applications with TDB+
+- Software developers building applications with LumaDB
 - Data engineers designing data pipelines
 - Full-stack developers needing database expertise
 
@@ -18,15 +18,15 @@
 
 ### Learning Objectives
 After completing this training, you will be able to:
-- Design efficient data models for TDB+
+- Design efficient data models for LumaDB
 - Write high-performance queries using multiple interfaces
 - Implement PromptQL for AI-powered applications
 - Optimize queries for production workloads
-- Integrate TDB+ into your applications
+- Integrate LumaDB into your applications
 
 ---
 
-## Module 1: TDB+ Fundamentals
+## Module 1: LumaDB Fundamentals
 
 ### 1.1 Architecture Overview
 
@@ -36,7 +36,7 @@ After completing this training, you will be able to:
 └───────────────────────────┬─────────────────────────────────┘
                             │
                     ┌───────┴───────┐
-                    │   TDB+ Client │
+                    │   LumaDB Client │
                     └───────┬───────┘
                             │
         ┌───────────────────┼───────────────────┐
@@ -47,7 +47,7 @@ After completing this training, you will be able to:
 └───────────────┘   └───────────────┘   └───────────────┘
                             │
                     ┌───────┴───────┐
-                    │  TDB+ Server  │
+                    │  LumaDB Server  │
                     └───────────────┘
 ```
 
@@ -80,17 +80,17 @@ user_document = {
 # Full-text: Text search
 ```
 
-### 1.3 Hands-On Exercise: Hello TDB+
+### 1.3 Hands-On Exercise: Hello LumaDB
 
 ```python
 # Exercise 1: Connect and perform basic operations
 
 import asyncio
-from tdb import TDBClient
+from tdb import LumaDBClient
 
 async def hello_tdbplus():
-    # Connect to TDB+
-    client = TDBClient(host="localhost", port=8080)
+    # Connect to LumaDB
+    client = LumaDBClient(host="localhost", port=8080)
 
     # Create a collection
     users = client.collection("training_users")
@@ -99,7 +99,7 @@ async def hello_tdbplus():
     doc_id = await users.insert({
         "name": "Training User",
         "email": "training@example.com",
-        "course": "TDB+ Developer Training"
+        "course": "LumaDB Developer Training"
     })
     print(f"Inserted document: {doc_id}")
 
@@ -699,7 +699,7 @@ async def optimization_challenge():
 
 ```python
 import asyncio
-from tdb import TDBClient, ConnectionPool
+from tdb import LumaDBClient, ConnectionPool
 
 # Production connection setup
 async def setup_connection():
@@ -725,7 +725,7 @@ async def setup_connection():
 
 ```python
 from tdb.exceptions import (
-    TDBError,
+    LumaDBError,
     ConnectionError,
     QueryError,
     DuplicateKeyError,
@@ -758,9 +758,9 @@ async def robust_operations():
         print(f"Query error: {e.message}")
         print(f"Query: {e.query}")
 
-    except TDBError as e:
+    except LumaDBError as e:
         # Generic error handler
-        print(f"TDB error: {e}")
+        print(f"LumaDB error: {e}")
 ```
 
 ### 5.3 Building a REST API
@@ -768,10 +768,10 @@ async def robust_operations():
 ```python
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from tdb import TDBClient
+from tdb import LumaDBClient
 
 app = FastAPI()
-client = TDBClient(host="localhost", port=8080)
+client = LumaDBClient(host="localhost", port=8080)
 
 class User(BaseModel):
     name: str
@@ -851,7 +851,7 @@ async def natural_language_query(query: str):
 
 ### Final Project
 
-Build a complete application using TDB+ that includes:
+Build a complete application using LumaDB that includes:
 
 1. **Data model design** for your chosen domain
 2. **Indexes** for common query patterns
@@ -863,7 +863,7 @@ Build a complete application using TDB+ that includes:
 
 ## Resources
 
-- [TDB+ User Manual](./manual.md)
+- [LumaDB User Manual](./manual.md)
 - [API Reference](../api-reference/python-api.md)
 - [Performance Benchmarks](../performance/benchmarks.md)
 - [Video Tutorials](../videos/README.md)

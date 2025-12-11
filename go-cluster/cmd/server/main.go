@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lumadb/cluster/pkg/ai" // New import
 	"github.com/lumadb/cluster/pkg/api"
 	"github.com/lumadb/cluster/pkg/cluster"
 	"github.com/lumadb/cluster/pkg/config"
@@ -29,6 +30,8 @@ func main() {
 	raftAddr := flag.String("raft-addr", ":10000", "Raft address")
 	dataDir := flag.String("data-dir", "./data", "Data directory")
 	join := flag.String("join", "", "Existing cluster node to join")
+	aiHost := flag.String("ai-host", "localhost", "AI Service Host")
+	aiPort := flag.Int("ai-port", 8000, "AI Service Port")
 	flag.Parse()
 
 	// Initialize logger
@@ -82,11 +85,25 @@ func main() {
 		}
 	}
 
+	// Initialize AI Client
+	aiClient := ai.NewClient(ai.Config{
+		Host: *aiHost,
+		Port: *aiPort,
+	})
+	if aiClient.HealthCheck() {
+		logger.Info("AI Service connected", zap.String("host", *aiHost))
+	} else {
+		logger.Warn("AI Service not reachable", zap.String("host", *aiHost))
+	}
+
+	// Initialize RAG Service
+	ragService := ai.NewRAGService(node.GetDatabase(), aiClient, logger)
+
 	// Create router for request distribution
 	rtr := router.NewRouter(node, logger)
 
 	// Create HTTP API server
-	apiServer := api.NewServer(node, rtr, logger)
+	apiServer := api.NewServer(node, rtr, ragService, logger)
 
 	// Start HTTP server
 	httpServer := &http.Server{

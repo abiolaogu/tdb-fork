@@ -9,7 +9,7 @@
 
 import * as http from 'http';
 import { Database } from '../core/Database';
-import { QueryLanguage, TDBError } from '../types';
+import { QueryLanguage, LumaError } from '../types';
 import { VERSION } from '../index';
 
 interface ServerConfig {
@@ -234,7 +234,7 @@ class TDBServer {
   private handleError(res: http.ServerResponse, error: any): void {
     console.error('Request error:', error);
 
-    if (error instanceof TDBError) {
+    if (error instanceof LumaError) {
       this.sendJSON(res, 400, {
         success: false,
         error: {

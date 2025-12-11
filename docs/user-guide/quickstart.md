@@ -1,4 +1,4 @@
-# TDB+ Quick Start Guide
+# LumaDB Quick Start Guide
 
 ## Get Running in 5 Minutes
 
@@ -16,8 +16,8 @@ curl -LO https://releases.tdbplus.io/latest/install.sh && bash install.sh
 
 ```python
 # Python
-from tdb import TDBClient
-client = TDBClient(host="localhost", port=8080)
+from tdb import LumaDBClient
+client = LumaDBClient(host="localhost", port=8080)
 ```
 
 ```go

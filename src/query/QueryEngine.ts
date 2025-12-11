@@ -38,6 +38,30 @@ export class QueryEngine {
     this.cacheMaxSize = 1000;
   }
 
+  // Internal method to execute pre-parsed query to reuse logic
+  private async executeParsedQuery<T>(parsed: ParsedQuery): Promise<QueryResult<T>> {
+    const startTime = Date.now();
+    let result: QueryResult<T>;
+
+    switch (parsed.type) {
+      case 'SELECT': result = await this.executeSelect<T>(parsed); break;
+      case 'INSERT': result = await this.executeInsert<T>(parsed); break;
+      case 'UPDATE': result = await this.executeUpdate<T>(parsed); break;
+      case 'DELETE': result = await this.executeDelete<T>(parsed); break;
+      case 'COUNT': result = await this.executeCount<T>(parsed); break;
+      case 'AGGREGATE': result = await this.executeAggregate<T>(parsed); break;
+      case 'CREATE_COLLECTION': result = await this.executeCreateCollection<T>(parsed); break;
+      case 'DROP_COLLECTION': result = await this.executeDropCollection<T>(parsed); break;
+      case 'CREATE_INDEX': result = await this.executeCreateIndex<T>(parsed); break;
+      case 'DROP_INDEX': result = await this.executeDropIndex<T>(parsed); break;
+      default: throw new QuerySyntaxError(`Unknown query type: ${parsed.type}`);
+    }
+
+    result.executionTime = Date.now() - startTime;
+    return result;
+  }
+
+
   /**
    * Execute a query with the specified language
    */
@@ -144,7 +168,9 @@ export class QueryEngine {
     if (this.queryCache.size >= this.cacheMaxSize) {
       // Remove oldest entry
       const firstKey = this.queryCache.keys().next().value;
-      this.queryCache.delete(firstKey);
+      if (firstKey) {
+        this.queryCache.delete(firstKey);
+      }
     }
     this.queryCache.set(cacheKey, parsed);
 
@@ -449,6 +475,10 @@ export class QueryEngine {
   }
 
   private calculateAggregation(documents: DocumentData[], agg: AggregationClause): any {
+    if (agg.function === 'COUNT' && agg.field === '*') {
+      return documents.length;
+    }
+
     const values = documents
       .map((doc) => this.getNestedValue(doc, agg.field))
       .filter((v) => v !== undefined && v !== null);

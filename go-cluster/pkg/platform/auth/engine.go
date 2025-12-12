@@ -14,6 +14,15 @@ var (
 	ErrExpiredToken = errors.New("expired token")
 )
 
+type Action string
+
+const (
+	ActionRead   Action = "read"
+	ActionWrite  Action = "write"
+	ActionDelete Action = "delete"
+	ActionManage Action = "manage"
+)
+
 type Claims struct {
 	UserID string `json:"user_id"`
 	Role   string `json:"role"`
@@ -21,18 +30,33 @@ type Claims struct {
 }
 
 type AuthEngine struct {
-	node      *cluster.Node
-	logger    *zap.Logger
-	secretKey []byte
+	node        *cluster.Node
+	logger      *zap.Logger
+	secretKey   []byte
+	permissions map[string]map[Action]bool // role -> action -> allowed
 }
 
 func NewAuthEngine(node *cluster.Node, logger *zap.Logger) *AuthEngine {
 	// In production, load from config/env
-	return &AuthEngine{
-		node:      node,
-		logger:    logger,
-		secretKey: []byte("luma-super-secret-key-change-me"),
+	e := &AuthEngine{
+		node:        node,
+		logger:      logger,
+		secretKey:   []byte("luma-super-secret-key-change-me"),
+		permissions: make(map[string]map[Action]bool),
 	}
+
+	// Setup Default Roles (MVP)
+	e.permissions["admin"] = map[Action]bool{
+		ActionRead:   true,
+		ActionWrite:  true,
+		ActionDelete: true,
+		ActionManage: true,
+	}
+	e.permissions["viewer"] = map[Action]bool{
+		ActionRead: true,
+	}
+
+	return e
 }
 
 func (e *AuthEngine) Start() error {
@@ -76,4 +100,14 @@ func (e *AuthEngine) ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+// IsAuthorized checks if a role can perform an action
+func (e *AuthEngine) IsAuthorized(role string, action Action) bool {
+	if roleMap, ok := e.permissions[role]; ok {
+		if allowed, ok := roleMap[action]; ok {
+			return allowed
+		}
+	}
+	return false
 }

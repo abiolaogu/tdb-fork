@@ -61,7 +61,13 @@ To create the world's most versatile high-performance database that unifies tran
 - **Optimization**: Distributed Hash Join implementation.
 - **Federation**: Remote Graph stitching.
 
-### Phase 4: Cloud Native
+### Phase 4: Platform Features (Completed)
+- **Cron Triggers**: Scheduled task execution.
+- **RBAC**: Role-Based Authorization.
+- **MCP**: Advanced Agent Introspection tools.
+- **Data Federation**: Extensible Source Interface.
+
+### Phase 5: Cloud Native (Upcoming)
 - Kubernetes Operator.
 - Managed Cloud Service (DBaaS).
 

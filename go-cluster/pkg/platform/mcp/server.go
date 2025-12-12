@@ -55,6 +55,19 @@ func (s *MCPServer) registerTools() {
 		mcp.WithString("query", mcp.Required(), mcp.Description("The GraphQL query string")),
 		mcp.WithString("variables", mcp.Description("Optional variables as JSON string")),
 	), s.handleGraphQLQuery)
+
+	// Tool: list_collections
+	s.server.AddTool(mcp.NewTool(
+		"list_collections",
+		mcp.WithDescription("List all collections in the database"),
+	), s.handleListCollections)
+
+	// Tool: inspect_schema
+	s.server.AddTool(mcp.NewTool(
+		"inspect_schema",
+		mcp.WithDescription("Get the schema of a collection"),
+		mcp.WithString("collection", mcp.Required(), mcp.Description("The collection name")),
+	), s.handleInspectSchema)
 }
 
 func (s *MCPServer) registerResources() {
@@ -119,6 +132,27 @@ func (s *MCPServer) handleQueryLayer(ctx context.Context, request mcp.CallToolRe
 	}
 
 	return mcp.NewToolResultText("Query type not supported yet via MCP"), nil
+}
+
+func (s *MCPServer) handleListCollections(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// MVP: Mock response or query system table
+	// In real impl: s.node.ListCollections()
+	collections := []string{"users", "products", "orders", "system.events"}
+	return mcp.NewToolResultText(fmt.Sprintf("%v", collections)), nil
+}
+
+func (s *MCPServer) handleInspectSchema(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	collection, err := request.RequireString("collection")
+	if err != nil {
+		return mcp.NewToolResultError("collection argument is required"), nil
+	}
+	// MVP: Mock schema
+	schema := map[string]string{
+		"id":         "string",
+		"created_at": "datetime",
+		"updated_at": "datetime",
+	}
+	return mcp.NewToolResultText(fmt.Sprintf("Schema for %s: %v", collection, schema)), nil
 }
 
 // ServeStdio serves MCP over standard input/output

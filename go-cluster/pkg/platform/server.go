@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lumadb/cluster/pkg/cluster"
 	"github.com/lumadb/cluster/pkg/platform/auth"
+	"github.com/lumadb/cluster/pkg/platform/cron"
 	gql "github.com/lumadb/cluster/pkg/platform/graphql"
 	"go.uber.org/zap"
 )
@@ -18,6 +19,7 @@ type Server struct {
 	logger     *zap.Logger
 	gqlEngine  *gql.GraphQLEngine
 	authEngine *auth.AuthEngine
+	cron       *cron.Scheduler
 	router     *gin.Engine
 }
 
@@ -27,12 +29,17 @@ func NewServer(node *cluster.Node, logger *zap.Logger) *Server {
 		logger:     logger,
 		gqlEngine:  gql.NewGraphQLEngine(node, logger),
 		authEngine: auth.NewAuthEngine(node, logger),
+		cron:       cron.NewScheduler(node, logger),
 		router:     gin.Default(),
 	}
 }
 
 func (s *Server) Start(addr string) error {
 	s.logger.Info("Starting LumaDB Platform Server", zap.String("addr", addr))
+
+	// Start Cron
+	s.cron.Start()
+	defer s.cron.Stop()
 
 	// Initialize Schema
 	if err := s.gqlEngine.BuildSchema(); err != nil {
@@ -111,6 +118,11 @@ func (s *Server) handleGraphQLOrPlayground(c *gin.Context) {
 // Simple REST Handlers
 func (s *Server) handleRestList(c *gin.Context) {
 	collection := c.Param("collection")
+	role := c.GetString("role")
+	if !s.authEngine.IsAuthorized(role, auth.ActionRead) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
 	// TODO: Parse limit/offset/filter from query params
 	// Delegate to Node/DB
 	// docs, err := s.node.RunQuery(collection, map[string]interface{}{"limit": 100})
@@ -120,6 +132,12 @@ func (s *Server) handleRestList(c *gin.Context) {
 
 func (s *Server) handleRestInsert(c *gin.Context) {
 	collection := c.Param("collection")
+	role := c.GetString("role")
+	if !s.authEngine.IsAuthorized(role, auth.ActionWrite) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
+
 	var doc map[string]interface{}
 	if err := c.BindJSON(&doc); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -150,6 +168,11 @@ func (s *Server) handleStats(c *gin.Context) {
 func (s *Server) handleRestGet(c *gin.Context) {
 	collection := c.Param("collection")
 	id := c.Param("id")
+	role := c.GetString("role")
+	if !s.authEngine.IsAuthorized(role, auth.ActionRead) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+		return
+	}
 	// doc, err := s.node.GetDocument(collection, id)
 	c.JSON(http.StatusOK, gin.H{"collection": collection, "id": id, "data": nil})
 }

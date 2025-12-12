@@ -42,7 +42,25 @@ age_threshold_seconds = 3600
 strategy = { type = "ErasureCoding", data_shards = 6, parity_shards = 3 }
 ```
 
-## 4. Using the Database
+## 4. Authentication & Security
+LumaDB is secure by default (v2.1+).
+
+### 4.1 Login
+Obtain a token using the credentials (default: `admin` / `password`).
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -d '{"username": "admin", "password": "password"}'
+# Returns: {"token": "eyJhbGci..."}
+```
+
+### 4.2 Using APIs
+Pass the token in the Authorization header:
+```bash
+curl -H "Authorization: Bearer <TOKEN>" http://localhost:8080/api/v1/users
+```
+
+## 5. Using the Database
+```
 
 ### 4.1 Connecting
 LumaDB exposes an HTTP API and a gRPC interface.

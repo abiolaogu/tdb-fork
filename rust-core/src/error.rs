@@ -126,6 +126,18 @@ impl From<serde_json::Error> for LumaError {
     }
 }
 
+impl From<rmp_serde::encode::Error> for LumaError {
+    fn from(e: rmp_serde::encode::Error) -> Self {
+        LumaError::Serialization(e.to_string())
+    }
+}
+
+impl From<rmp_serde::decode::Error> for LumaError {
+    fn from(e: rmp_serde::decode::Error) -> Self {
+        LumaError::Deserialization(e.to_string())
+    }
+}
+
 impl LumaError {
     /// Check if error is retryable
     pub fn is_retryable(&self) -> bool {

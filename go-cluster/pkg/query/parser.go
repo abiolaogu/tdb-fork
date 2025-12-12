@@ -10,14 +10,45 @@ import (
 type Statement struct {
 	Select *Select `@@`
 	Insert *Insert `| @@`
-	// TODO: Update, Delete
+	Update *Update `| @@`
+	Delete *Delete `| @@`
 }
 
 type Select struct {
-	Fields []Field ` "SELECT" @@ { "," @@ }`
-	From   string  ` "FROM" @Ident`
-	Where  *Where  ` [ "WHERE" @@ ]`
-	Limit  *int    ` [ "LIMIT" @Number ]`
+	Fields  []Field  ` "SELECT" @@ { "," @@ }`
+	From    string   ` "FROM" @Ident`
+	Joins   []Join   ` { @@ }`
+	Where   *Where   ` [ "WHERE" @@ ]`
+	GroupBy []string ` [ "GROUP" "BY" @Ident { "," @Ident } ]`
+	OrderBy []Order  ` [ "ORDER" "BY" @@ { "," @@ } ]`
+	Limit   *int     ` [ "LIMIT" @Number ]`
+}
+
+type Join struct {
+	Type  string     ` ( @( "LEFT" | "RIGHT" | "INNER" | "OUTER" ) )? "JOIN"`
+	Table string     ` @Ident`
+	On    *Condition ` "ON" @@`
+}
+
+type Order struct {
+	Field string `@Ident`
+	Desc  bool   `[ @( "DESC" | "ASC" ) ]`
+}
+
+type Update struct {
+	Collection string ` "UPDATE" @Ident`
+	Sets       []Set  ` "SET" @@ { "," @@ }`
+	Where      *Where ` [ "WHERE" @@ ]`
+}
+
+type Set struct {
+	Field string `@Ident`
+	Value *Value ` "=" @@`
+}
+
+type Delete struct {
+	Collection string ` "DELETE" "FROM" @Ident`
+	Where      *Where ` [ "WHERE" @@ ]`
 }
 
 type Insert struct {
@@ -27,8 +58,14 @@ type Insert struct {
 }
 
 type Field struct {
-	Name string `@Ident`
-	// TODO: Aggregations, Aliases
+	Name      *string    ` ( @Ident`
+	Aggregate *Aggregate ` | @@ )`
+	Alias     string     ` [ "AS" @Ident ]`
+}
+
+type Aggregate struct {
+	Func  string `@( "COUNT" | "SUM" | "AVG" | "MIN" | "MAX" )`
+	Field string ` "(" ( @Ident | "*" ) ")"`
 }
 
 type Where struct {

@@ -181,6 +181,26 @@ pub unsafe extern "C" fn luma_create_collection(
     }
 }
 
+/// List all collections
+#[no_mangle]
+pub unsafe extern "C" fn luma_list_collections(
+    handle: LumaHandle,
+    names_out: *mut LumaBuffer,
+) -> LumaResult {
+    let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+        Some(e) => e,
+        None => return LumaResult::ErrInvalidHandle,
+    };
+
+    let names = engine.list_collections();
+    let json = serde_json::to_vec(&names).unwrap_or_else(|_| b"[]".to_vec());
+
+    if !names_out.is_null() {
+        *names_out = LumaBuffer::new(json);
+    }
+    LumaResult::Ok
+}
+
 /// Drop a collection
 #[no_mangle]
 pub unsafe extern "C" fn luma_drop_collection(
@@ -205,6 +225,40 @@ pub unsafe extern "C" fn luma_drop_collection(
     match rt.block_on(async {
         engine.drop_collection(name_str).await
     }) {
+        Ok(_) => LumaResult::Ok,
+        Err(e) => e.into(),
+    }
+}
+
+/// Create a secondary index
+#[no_mangle]
+pub unsafe extern "C" fn luma_create_index(
+    handle: LumaHandle,
+    collection: *const c_char,
+    name: *const c_char,
+    field: *const c_char,
+) -> LumaResult {
+    let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+        Some(e) => e,
+        None => return LumaResult::ErrInvalidHandle,
+    };
+
+    let collection_str = match CStr::from_ptr(collection).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let name_str = match CStr::from_ptr(name).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let field_str = match CStr::from_ptr(field).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    match engine.create_index(collection_str, name_str, field_str) {
         Ok(_) => LumaResult::Ok,
         Err(e) => e.into(),
     }
@@ -463,15 +517,77 @@ pub unsafe extern "C" fn luma_query(
         Err(_) => return LumaResult::ErrInvalidArgument,
     };
 
+    let query_str = match CStr::from_ptr(query_json).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
     let rt = match tokio::runtime::Runtime::new() {
         Ok(rt) => rt,
         Err(_) => return LumaResult::ErrInternal,
     };
 
-    match rt.block_on(engine.scan(collection_str, |_| true)) {
+    // Parse query
+    // If empty or invalid JSON, we treat as empty query (scan all)
+    let query: crate::types::Query = serde_json::from_str(query_str).unwrap_or(crate::types::Query {
+        filter: None,
+        limit: None,
+    });
+
+    match rt.block_on(engine.query(collection_str, query)) {
         Ok(docs) => {
              let json = serde_json::to_vec(&docs).unwrap_or_else(|_| b"[]".to_vec());
              *results_out = LumaBuffer::new(json);
+             LumaResult::Ok
+        },
+        Err(e) => e.into(),
+    }
+}
+
+/// Execute a query using MessagePack (binary)
+///
+/// # Safety
+/// query_data must be a valid pointer of length query_len.
+#[no_mangle]
+pub unsafe extern "C" fn luma_query_mp(
+    handle: LumaHandle,
+    collection: *const c_char,
+    query_data: *const u8,
+    query_len: usize,
+    results_out: *mut LumaBuffer,
+) -> LumaResult {
+    let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+        Some(e) => e,
+        None => return LumaResult::ErrInvalidHandle,
+    };
+
+    let collection_str = match CStr::from_ptr(collection).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let slice = std::slice::from_raw_parts(query_data, query_len);
+    let query: crate::types::Query = match rmp_serde::from_slice(slice) {
+        Ok(q) => q,
+        Err(_) => crate::types::Query { // Fallback or strict error? Let's treat as empty
+            filter: None,
+            limit: None,
+        }
+    };
+
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(_) => return LumaResult::ErrInternal,
+    };
+
+    match rt.block_on(engine.query(collection_str, query)) {
+        Ok(docs) => {
+             // Encode results as MessagePack
+             let mp_data = match rmp_serde::to_vec(&docs) {
+                 Ok(data) => data,
+                 Err(_) => return LumaResult::ErrInternal,
+             };
+             *results_out = LumaBuffer::new(mp_data);
              LumaResult::Ok
         },
         Err(e) => e.into(),
@@ -506,7 +622,11 @@ pub unsafe extern "C" fn luma_search_vector(
         Err(_) => return LumaResult::ErrInternal,
     };
 
-    // Call search_vector on HybridStorage
+    // Call search_vector on Database
+    // Note: search_vector is synchronous in Database impl shown previously, no need for async block?
+    // But Database::search_vector delegates to shards which is sync.
+    // engine.search_vector returns Vec<(Vec<u8>, f32)>
+    
     let results = engine.search_vector(&query_vector, k);
     
     // Convert results (Vec<(Vec<u8>, f32)>) to JSON friendly format
@@ -611,6 +731,70 @@ pub unsafe extern "C" fn luma_buffer_len(buffer: *const LumaBuffer) -> usize {
         0
     } else {
         (*buffer).len
+    }
+}
+
+// ============================================================================
+// Snapshot Operations
+// ============================================================================
+
+/// Save database snapshot to file
+///
+/// # Safety
+/// path must be a valid null-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn luma_snapshot_save(
+    handle: LumaHandle,
+    path: *const c_char,
+) -> LumaResult {
+    let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+        Some(e) => e,
+        None => return LumaResult::ErrInvalidHandle,
+    };
+
+    let path_str = match CStr::from_ptr(path).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(_) => return LumaResult::ErrInternal,
+    };
+
+    match rt.block_on(engine.backup(path_str)) {
+        Ok(_) => LumaResult::Ok,
+        Err(e) => e.into(),
+    }
+}
+
+/// Load database snapshot from file
+///
+/// # Safety
+/// path must be a valid null-terminated C string.
+#[no_mangle]
+pub unsafe extern "C" fn luma_snapshot_load(
+    handle: LumaHandle,
+    path: *const c_char,
+) -> LumaResult {
+    let engine = match ENGINES.get().and_then(|m| m.get(handle)) {
+        Some(e) => e,
+        None => return LumaResult::ErrInvalidHandle,
+    };
+
+    let path_str = match CStr::from_ptr(path).to_str() {
+        Ok(s) => s,
+        Err(_) => return LumaResult::ErrInvalidArgument,
+    };
+
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(rt) => rt,
+        Err(_) => return LumaResult::ErrInternal,
+    };
+
+    match rt.block_on(engine.restore(path_str)) {
+        Ok(_) => LumaResult::Ok,
+        Err(e) => e.into(),
     }
 }
 

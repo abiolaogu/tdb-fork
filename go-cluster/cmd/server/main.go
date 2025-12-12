@@ -17,6 +17,7 @@ import (
 	"github.com/lumadb/cluster/pkg/api"
 	"github.com/lumadb/cluster/pkg/cluster"
 	"github.com/lumadb/cluster/pkg/config"
+	"github.com/lumadb/cluster/pkg/platform"
 	"github.com/lumadb/cluster/pkg/router"
 	"go.uber.org/zap"
 )
@@ -101,6 +102,12 @@ func main() {
 
 	// Create router for request distribution
 	rtr := router.NewRouter(node, logger)
+
+	// Initialize Luma Platform (MCP, GraphQL, Auth, Events)
+	plt := platform.NewPlatform(node, logger)
+	if err := plt.Start(); err != nil {
+		logger.Error("Failed to start Platform", zap.Error(err))
+	}
 
 	// Create HTTP API server
 	apiServer := api.NewServer(node, rtr, ragService, logger)

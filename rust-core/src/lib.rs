@@ -158,6 +158,11 @@ impl Database {
             .clone()
     }
 
+    /// List all collections
+    pub fn list_collections(&self) -> Vec<String> {
+        self.collections.iter().map(|entry| entry.key().clone()).collect()
+    }
+
     /// Drop a collection
     pub async fn drop_collection(&self, name: &str) -> Result<()> {
         if self.collections.remove(name).is_some() {
@@ -244,6 +249,18 @@ impl Database {
         coll.scan(predicate).await
     }
 
+    /// Execute a structured query
+    pub async fn query(&self, collection: &str, query: Query) -> Result<Vec<Document>> {
+        let coll = self.collection(collection);
+        coll.query(&query).await
+    }
+
+    /// Create a secondary index
+    pub fn create_index(&self, collection: &str, name: &str, field: &str) -> Result<()> {
+        let coll = self.collection(collection);
+        coll.create_index(name, field)
+    }
+
     /// Recover from WAL after crash
     async fn recover_from_wal(&self) -> Result<()> {
         // Recovery is handled by individual StorageEngine instances
@@ -285,6 +302,92 @@ impl Database {
     /// Search for vectors
     pub fn search_vector(&self, query: &[f32], k: usize) -> Vec<(Vec<u8>, f32)> {
         self.shards.search_vector(query, k)
+    }
+
+    /// Backup database to a file (Logical Snapshot)
+    pub async fn backup(&self, path: &str) -> Result<()> {
+        use tokio::io::AsyncWriteExt;
+        let mut file = tokio::fs::File::create(path).await.map_err(|e| LumaError::Io(e))?;
+        
+        // Write magic header
+        file.write_all(b"LUMA_V1").await.map_err(|e| LumaError::Io(e))?;
+
+        // Write number of collections
+        let collections_len = self.collections.len() as u32;
+        file.write_u32(collections_len).await.map_err(|e| LumaError::Io(e))?;
+
+        for entry in self.collections.iter() {
+            let name = entry.key();
+            let coll = entry.value();
+
+            // Write collection name
+            file.write_u32(name.len() as u32).await.map_err(|e| LumaError::Io(e))?;
+            file.write_all(name.as_bytes()).await.map_err(|e| LumaError::Io(e))?;
+
+            // Scan all documents
+            let docs = coll.scan(|_| true).await?;
+            
+            // Write document count
+            file.write_u64(docs.len() as u64).await.map_err(|e| LumaError::Io(e))?;
+
+            for doc in docs {
+                // Serialize document
+                let doc_data = rmp_serde::to_vec(&doc).map_err(|_| LumaError::Internal("Serialization error".into()))?;
+                
+                // Write doc size and data
+                file.write_u32(doc_data.len() as u32).await.map_err(|e| LumaError::Io(e))?;
+                file.write_all(&doc_data).await.map_err(|e| LumaError::Io(e))?;
+            }
+        }
+
+        file.flush().await.map_err(|e| LumaError::Io(e))?;
+        Ok(())
+    }
+
+    /// Restore database from a backup file
+    pub async fn restore(&self, path: &str) -> Result<()> {
+        use tokio::io::AsyncReadExt;
+        let mut file = tokio::fs::File::open(path).await.map_err(|e| LumaError::Io(e))?;
+
+        // Verify magic header
+        let mut magic = [0u8; 7];
+        file.read_exact(&mut magic).await.map_err(|e| LumaError::Io(e))?;
+        if &magic != b"LUMA_V1" {
+            return Err(LumaError::Corruption("Invalid backup format".into()));
+        }
+
+        // Read number of collections
+        let collections_len = file.read_u32().await.map_err(|e| LumaError::Io(e))?;
+
+        for _ in 0..collections_len {
+            // Read collection name
+            let name_len = file.read_u32().await.map_err(|e| LumaError::Io(e))? as usize;
+            let mut name_buf = vec![0u8; name_len];
+            file.read_exact(&mut name_buf).await.map_err(|e| LumaError::Io(e))?;
+            let name = String::from_utf8(name_buf).map_err(|_| LumaError::Corruption("Invalid collection name".into()))?;
+
+            let coll = self.collection(&name);
+
+            // Read document count
+            let doc_count = file.read_u64().await.map_err(|e| LumaError::Io(e))?;
+
+            for _ in 0..doc_count {
+                // Read doc size
+                let doc_len = file.read_u32().await.map_err(|e| LumaError::Io(e))? as usize;
+                let mut doc_buf = vec![0u8; doc_len];
+                file.read_exact(&mut doc_buf).await.map_err(|e| LumaError::Io(e))?;
+
+                // Deserialize document
+                let doc: Document = rmp_serde::from_slice(&doc_buf).map_err(|_| LumaError::Corruption("Invalid document data".into()))?;
+
+                // Insert/Upsert document
+                // Use internal insert or replay to skip some checks?
+                // Normal insert is fine for restore
+                coll.insert(doc).await?;
+            }
+        }
+
+        Ok(())
     }
 }
 

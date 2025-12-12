@@ -54,3 +54,24 @@
 > "See here? `db.insert('products', { name: 'Shoe', embedding: [...] })`."
 > "Now let's search: `db.ai.search('products', vector, top_k=5)`."
 > "It uses the internal FAISS index to find neighbors instantly."
+
+## Series 3: Platform Mastery
+
+### Video 3.1: Securing your Cluster
+**Duration:** 5 mins
+**Visuals:** Postman/Curl demo.
+
+**Script:**
+> **Host:** "Security is paramount. LumaDB v2.1 introduces built-in JWT Authentication."
+> "First, we login: `POST /api/auth/login`. We get back a token."
+> "Now, try to access `/api/v1/stats` without it... 401 Unauthorized."
+> "Add the header `Authorization: Bearer <token>`... and we're in."
+
+### Video 3.2: The Admin Dashboard
+**Duration:** 4 mins
+**Visuals:** Dashboard Walkthrough.
+
+**Script:**
+> **Host:** "Meet your new command center. The Admin Dashboard."
+> "Here you can see real-time stats: Operations Per Second, Active Nodes, and Storage usage."
+> "Navigate to 'Data Explorer' to view your collections without writing a single line of code."

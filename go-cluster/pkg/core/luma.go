@@ -22,6 +22,7 @@ extern LumaResult luma_close(LumaHandle handle);
 // Collection operations
 extern LumaResult luma_create_collection(LumaHandle handle, const char* name);
 extern LumaResult luma_drop_collection(LumaHandle handle, const char* name);
+extern LumaResult luma_list_collections(LumaHandle handle, LumaBuffer* names_out);
 
 // Document operations
 extern LumaResult luma_insert(LumaHandle handle, const char* collection, const char* doc_json, LumaBuffer* id_out);
@@ -32,6 +33,7 @@ extern LumaResult luma_delete(LumaHandle handle, const char* collection, const c
 
 // Query operations
 extern LumaResult luma_query(LumaHandle handle, const char* collection, const char* query, LumaBuffer* results_out);
+extern LumaResult luma_query_mp(LumaHandle handle, const char* collection, const uint8_t* query_data, size_t query_len, LumaBuffer* results_out);
 extern LumaResult luma_batch_insert(LumaHandle handle, const char* collection, const char* docs, size_t* count);
 extern LumaResult luma_search_vector(LumaHandle handle, const char* vector_json, size_t k, LumaBuffer* results_out);
 
@@ -39,6 +41,10 @@ extern LumaResult luma_search_vector(LumaHandle handle, const char* vector_json,
 extern void luma_buffer_free(LumaBuffer* buffer);
 extern const uint8_t* luma_buffer_data(const LumaBuffer* buffer);
 extern size_t luma_buffer_len(const LumaBuffer* buffer);
+
+// Snapshot operations
+extern LumaResult luma_snapshot_save(LumaHandle handle, const char* path);
+extern LumaResult luma_snapshot_load(LumaHandle handle, const char* path);
 
 // Info
 extern LumaResult luma_stats(LumaHandle handle, LumaBuffer* stats_out);
@@ -157,6 +163,26 @@ func (db *Database) DropCollection(name string) error {
 
 	result := C.luma_drop_collection(db.handle, cName)
 	return resultToError(result)
+}
+
+// ListCollections lists all collections
+func (db *Database) ListCollections() ([]string, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	var namesBuf C.LumaBuffer
+	result := C.luma_list_collections(db.handle, &namesBuf)
+	if err := resultToError(result); err != nil {
+		return nil, err
+	}
+	defer C.luma_buffer_free(&namesBuf)
+
+	namesJSON := C.GoBytes(unsafe.Pointer(namesBuf.data), C.int(namesBuf.len))
+	var names []string
+	if err := json.Unmarshal(namesJSON, &names); err != nil {
+		return nil, err
+	}
+	return names, nil
 }
 
 // Insert inserts a document into a collection
@@ -311,6 +337,40 @@ func (db *Database) Query(collection string, query interface{}) ([]map[string]in
 	return results, nil
 }
 
+// QueryMP executes a query on a collection using MessagePack
+func (db *Database) QueryMP(collection string, query interface{}) ([]map[string]interface{}, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	queryData, err := msgpack.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	cCollection := C.CString(collection)
+	defer C.free(unsafe.Pointer(cCollection))
+
+	var resultsBuf C.LumaBuffer
+	result := C.luma_query_mp(
+		db.handle,
+		cCollection,
+		(*C.uint8_t)(unsafe.Pointer(&queryData[0])),
+		C.size_t(len(queryData)),
+		&resultsBuf,
+	)
+	if err := resultToError(result); err != nil {
+		return nil, err
+	}
+	defer C.luma_buffer_free(&resultsBuf)
+
+	resultsData := C.GoBytes(unsafe.Pointer(resultsBuf.data), C.int(resultsBuf.len))
+	var results []map[string]interface{}
+	if err := msgpack.Unmarshal(resultsData, &results); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 // VectorSearch searches for similar vectors
 func (db *Database) VectorSearch(vector []float32, k int) ([]map[string]interface{}, error) {
 	db.mu.RLock()
@@ -381,6 +441,30 @@ func (db *Database) Stats() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return stats, nil
+}
+
+// Snapshot saves the database to a file
+func (db *Database) Snapshot(path string) error {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	result := C.luma_snapshot_save(db.handle, cPath)
+	return resultToError(result)
+}
+
+// Restore restores the database from a file
+func (db *Database) Restore(path string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+
+	result := C.luma_snapshot_load(db.handle, cPath)
+	return resultToError(result)
 }
 
 // Version returns the TDB+ version

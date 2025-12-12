@@ -43,7 +43,10 @@ This training program is designed to take you from a LumaDB novice to an expert 
 - **4.1 Cluster Topology**: Joining nodes and rebalancing.
 - **4.2 Backup & Restore**: Snapshotting and Point-in-Time Recovery.
 - **4.3 Upgrades**: Rolling upgrades without downtime.
-- **4.4 Security**: Authentication, Authorization (RBAC), and Encryption.
+- **4.4 Security**:
+  - **Authentication**: Generating JWT tokens via `/api/auth/login`.
+  - **Authorization**: Securing API endpoints with Middleware.
+  - **RBAC**: Managing user roles.
 - **4.5 Lab 4**: Setting up a 3-node HA cluster and simulating a node failure.
 
 ## Module 5: Final Assessment (2 Hours)

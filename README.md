@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/python-3.11+-3776AB.svg" alt="Python">
 </p>
 
-**LumaDB** is a high-performance, distributed database with AI-native capabilities. Built with a multi-language architecture combining **Rust** for speed, **Go** for scalability, and **Python** for AI integration. Features **three intuitive query languages** making database operations accessible to everyone.
+**LumaDB** is a high-performance, distributed database with AI-native capabilities. Features a **built-in Admin UI**, **Hasura-style GraphQL/REST APIs**, and **Event Triggers**. Built with a multi-language architecture combining **Rust** for speed, **Go** for scalability, and **Python** for AI integration.
 
 ## Architecture Overview
 
@@ -88,6 +88,29 @@
 - **Custom Logic**: Write stored procedures and triggers in Rhai
 - **High Performance**: Compiled scripts for fast execution
 - **Integration**: Direct access to LumaDB document types and collections
+
+## LumaDB Platform (New v2.0)
+
+### Admin Console
+- **Modern UI**: Dark-themed dashboard built with Next.js & Tailwind.
+- **Data Explorer**: View collections, execute SQL, and manage documents.
+- **API Explorer**: Integrated GraphiQL for testing GraphQL queries.
+- **Event Management**: Configure and monitor triggers.
+
+### GraphQL & REST Engine
+- **Auto-generated APIs**: Instant GraphQL and REST endpoints for your data.
+- **Live Queries**: Real-time subscriptions via WebSockets.
+- **Data Federation**: (Coming Soon) Connect to remote databases.
+
+### Auth & Security
+- **JWT Authentication**: Built-in identity management using HS256 tokens.
+- **Role-Based Access**: Granular control over read/write operations.
+- **Middleware**: Protects API and GraphQL endpoints automatically.
+
+### Event Triggers
+- **Real-time Events**: React to INSERT, UPDATE, DELETE operations.
+- **Webhooks**: POST payloads to external HTTP endpoints.
+- **Redpanda Integration**: Stream events directly to Redpanda topics with high throughput.
 
 ## Quick Start
 
@@ -335,9 +358,13 @@ tdb-fork/
 │   │   ├── cluster/        # Raft consensus
 │   │   ├── router/         # Request routing
 │   │   ├── api/            # HTTP/gRPC servers
+│   │   ├── platform/       # New: Platform Server (GraphQL/REST/Events)
 │   │   ├── pool/           # Connection pooling
 │   │   └── core/           # Rust FFI bindings
 │   └── go.mod
+│
+├── ui/                     # New: Admin Interface
+│   └── admin/              # Next.js Admin Console
 │
 ├── python-ai/              # AI service
 │   ├── tdbai/
@@ -385,6 +412,9 @@ cd python-ai && pip install -e .
 
 # Install TypeScript SDK
 npm install && npm run build
+
+# Build Admin UI
+cd ui/admin && npm install && npm run build
 ```
 
 ### Run Tests

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use dashmap::DashMap;
 
-use crate::types::{Document, DocumentId, Value};
+use crate::types::{Document, DocumentId, Value, Query};
 use crate::error::{Result, LumaError};
 use crate::shard::ShardManager;
 use crate::wal::WriteAheadLog;
@@ -56,7 +56,7 @@ impl Collection {
             }
         }
 
-        let value = bincode::serialize(&doc)?;
+        let value = rmp_serde::to_vec(&doc)?;
 
         // Get shard for this key
         let shard = self.shards.get_shard(&key);
@@ -83,7 +83,7 @@ impl Collection {
 
         match shard.get(&key).await? {
             Some(value) => {
-                let doc: Document = bincode::deserialize(&value)?;
+                let doc: Document = rmp_serde::from_slice(&value)?;
                 if doc.is_expired() {
                     // Remove expired document
                     self.delete(id).await?;
@@ -107,7 +107,7 @@ impl Collection {
         }
 
         doc.increment_revision();
-        let value = bincode::serialize(&doc)?;
+        let value = rmp_serde::to_vec(&doc)?;
         shard.put(key, value).await?;
 
         // Update indexes
@@ -153,7 +153,7 @@ impl Collection {
         for shard in self.shards.all_shards() {
             let entries = shard.scan_prefix(self.name.as_bytes()).await?;
             for (_, value) in entries {
-                let doc: Document = bincode::deserialize(&value)?;
+                let doc: Document = rmp_serde::from_slice(&value)?;
                 if !doc.is_expired() && predicate(&doc) {
                     results.push(doc);
                 }
@@ -166,7 +166,7 @@ impl Collection {
     /// Replay insert during recovery
     pub async fn replay_insert(&self, doc: Document) -> Result<()> {
         let key = self.doc_key(&doc.id);
-        let value = bincode::serialize(&doc)?;
+        let value = rmp_serde::to_vec(&doc)?;
         let shard = self.shards.get_shard(&key);
         shard.put(key, value).await?;
         Ok(())
@@ -218,6 +218,76 @@ impl Collection {
         Ok(())
     }
 
+    /// Execute a query using indexes if possible
+    pub async fn query(&self, query: &Query) -> Result<Vec<Document>> {
+        let mut candidates: Option<Vec<DocumentId>> = None;
+
+        // 1. Try to use indexes for filtering
+        if let Some(filter) = &query.filter {
+            for (field, value) in filter {
+                if let Some(index) = self.indexes.get(field) {
+                    let key = self.value_to_bytes(value);
+                    if let Some(ids) = index.entries.get(&key) {
+                        // Found matching IDs
+                        match &mut candidates {
+                            Some(c) => {
+                                // Intersect
+                                c.retain(|id| ids.contains(id));
+                            }
+                            None => {
+                                candidates = Some(ids.clone());
+                            }
+                        }
+                    } else {
+                        // Index exists but no match -> empty result
+                        return Ok(Vec::new());
+                    }
+                }
+            }
+        }
+
+        let mut results = Vec::new();
+
+        // 2. Fetch documents
+        if let Some(ids) = candidates {
+            // Index Lookup Strategy
+            for id in ids {
+                if let Ok(Some(doc)) = self.get(&id).await {
+                    if self.matches_filter(&doc, &query.filter) {
+                        results.push(doc);
+                    }
+                }
+            }
+        } else {
+            // Full Scan Strategy
+            results = self.scan(|doc| self.matches_filter(doc, &query.filter)).await?;
+        }
+
+        // 3. Apply Limit
+        if let Some(limit) = query.limit {
+            if results.len() > limit {
+                results.truncate(limit);
+            }
+        }
+
+        Ok(results)
+    }
+
+    fn matches_filter(&self, doc: &Document, filter: &Option<std::collections::HashMap<String, Value>>) -> bool {
+        if let Some(f) = filter {
+            for (k, v) in f {
+                if let Some(doc_val) = doc.data.get(k) {
+                    if doc_val != v {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
     // ============================================================================
     // Internal
     // ============================================================================
@@ -245,7 +315,7 @@ impl Collection {
             Value::Int(i) => i.to_be_bytes().to_vec(),
             Value::Float(f) => f.to_be_bytes().to_vec(),
             Value::Bool(b) => vec![if *b { 1 } else { 0 }],
-            _ => bincode::serialize(value).unwrap_or_default(),
+            _ => rmp_serde::to_vec(value).unwrap_or_default(),
         }
     }
 }

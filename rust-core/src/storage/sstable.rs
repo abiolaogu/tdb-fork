@@ -115,6 +115,21 @@ impl SSTable {
         &self.path
     }
 
+    /// Get file size in bytes
+    pub fn size(&self) -> u64 {
+        self.mmap.as_ref().map(|m| m.len() as u64).unwrap_or(0)
+    }
+
+    /// Get min key
+    pub fn min_key(&self) -> &[u8] {
+        &self.min_key
+    }
+
+    /// Get max key
+    pub fn max_key(&self) -> &[u8] {
+        &self.max_key
+    }
+
     fn read_block(&self, offset: u64, size: u32) -> Result<Vec<u8>> {
         let mmap = self.mmap.as_ref().ok_or(LumaError::FileNotFound("mmap".into()))?;
         let start = offset as usize;

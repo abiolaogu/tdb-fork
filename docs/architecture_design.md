@@ -104,7 +104,30 @@ The AI layer (`luma-ai`) provides vector search and natural language processing 
    - **L3 (HDD)**: If deeply cold, read from HDD.
 4. Result returned to client.
 
-## 4. Configuration
+## 4. LumaDB Platform Layer (v2.0)
+The Platform Layer sits on top of the Go Cluster to provide developer-friendly APIs and tools.
+
+### 4.1 API Gateway
+- **GraphQL Engine**: Dynamically generates schemas from collections. Supports queries, mutations, and WebSocket subscriptions.
+- **REST API**: Auto-generated CRUD endpoints (`/api/v1/:collection`).
+- **GraphiQL**: Interactive GraphQL IDE embedded in the Admin Console.
+
+### 4.2 Event System
+- **Trigger Manager**: Listens to database operations (Insert/Update/Delete).
+- **Sinks**:
+    - **Webhooks**: HTTP callbacks.
+    - **Redpanda**: High-throughput event streaming to Kafka-compatible topics.
+
+### 4.3 Admin Console
+- **Tech Stack**: Next.js 14, Tailwind CSS, React.
+- **Features**: Dashboard, Data Explorer, SQL Runner, Event Configuration.
+
+### 4.4 Security
+- **Authentication**: JWT (HS256) based token issuance and validation.
+- **Authorization**: Middleware intercepts requests to `/api/*` and `/graphql` to enforce permissions.
+- **Identity**: Pluggable `AuthEngine` currently supports local admin users.
+
+## 5. Configuration
 
 LumaDB is configured via `luma.toml`. Users can define storage tiers, redundancy strategies (Replication vs Erasure Coding), and hardware limits.
 

@@ -3,6 +3,7 @@
 package cluster
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 	raftboltdb "github.com/hashicorp/raft-boltdb"
 	"github.com/lumadb/cluster/pkg/config"
 	"github.com/lumadb/cluster/pkg/core" // New import
+	"github.com/lumadb/cluster/pkg/platform/events"
 	"go.uber.org/zap"
 )
 
@@ -40,6 +42,9 @@ type Node struct {
 	// Shard assignments
 	shards   map[uint32]*ShardInfo
 	shardsMu sync.RWMutex
+
+	// Event Triggers
+	triggers *events.TriggerManager
 }
 
 // ShardInfo contains information about a shard
@@ -70,11 +75,24 @@ func NewNode(cfg *config.Config, logger *zap.Logger) (*Node, error) {
 	}
 
 	node := &Node{
-		config: cfg,
-		logger: logger,
-		db:     db,
-		peers:  make(map[string]string),
-		shards: make(map[uint32]*ShardInfo),
+		config:   cfg,
+		logger:   logger,
+		db:       db,
+		peers:    make(map[string]string),
+		shards:   make(map[uint32]*ShardInfo),
+		triggers: events.NewTriggerManager(logger, cfg.RedpandaAddr),
+	}
+
+	// Initialize shards
+	numShards := uint32(cfg.NumShards)
+	if numShards == 0 {
+		numShards = 16 // Default if 0
+	}
+	for i := uint32(0); i < numShards; i++ {
+		node.shards[i] = &ShardInfo{
+			ID:     i,
+			Status: "active",
+		}
 	}
 
 	// Create FSM
@@ -131,6 +149,17 @@ func NewNode(cfg *config.Config, logger *zap.Logger) (*Node, error) {
 	return node, nil
 }
 
+// UpdateShardStatus updates the status of a shard
+func (n *Node) UpdateShardStatus(shardID uint32, leader string, status string) {
+	n.shardsMu.Lock()
+	defer n.shardsMu.Unlock()
+
+	if shard, ok := n.shards[shardID]; ok {
+		shard.Leader = leader
+		shard.Status = status
+	}
+}
+
 // Bootstrap starts a new cluster with this node as the initial leader
 func (n *Node) Bootstrap() error {
 	n.logger.Info("Bootstrapping new cluster")
@@ -183,6 +212,10 @@ func (n *Node) Shutdown() error {
 		if err := n.db.Close(); err != nil {
 			n.logger.Error("Failed to close database", zap.Error(err))
 		}
+	}
+
+	if n.triggers != nil {
+		n.triggers.Close()
 	}
 
 	return nil
@@ -260,6 +293,11 @@ func (n *Node) GetShardForKey(key []byte) *ShardInfo {
 // GetDatabase returns the underlying database instance
 func (n *Node) GetDatabase() *core.Database {
 	return n.db
+}
+
+// GetConfig returns the node configuration
+func (n *Node) GetConfig() *config.Config {
+	return n.config
 }
 
 func (n *Node) monitorLeadership() {
@@ -345,24 +383,208 @@ func (f *FSM) Apply(log *raft.Log) interface{} {
 
 // Snapshot returns an FSM snapshot
 func (f *FSM) Snapshot() (raft.FSMSnapshot, error) {
-	// For persistent storage, we rely on the underlying engine's persistence.
-	// In a full implementation, this should generate a checkpoint of the LumaDB.
-	// For now, we return a dummy snapshot to satisfy the interface.
-	return &fsmSnapshot{}, nil
+	return &fsmSnapshot{node: f.node}, nil
 }
 
 // Restore restores the FSM from a snapshot
 func (f *FSM) Restore(rc io.ReadCloser) error {
 	defer rc.Close()
-	// No-op: Data is assumed to be on disk.
+
+	// Create temp file for restore
+	tmpFile, err := os.CreateTemp("", "luma-snapshot-*.bin")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	// Copy snapshot data to temp file
+	if _, err := io.Copy(tmpFile, rc); err != nil {
+		return fmt.Errorf("failed to copy snapshot data: %w", err)
+	}
+
+	// Restore DB from file
+	f.logger.Info("Restoring from snapshot", zap.String("path", tmpFile.Name()))
+	if err := f.node.db.Restore(tmpFile.Name()); err != nil {
+		return fmt.Errorf("failed to restore db: %w", err)
+	}
+
 	return nil
 }
 
-type fsmSnapshot struct{}
+type fsmSnapshot struct {
+	node *Node
+}
 
 func (s *fsmSnapshot) Persist(sink raft.SnapshotSink) error {
-	// No-op
-	return sink.Close()
+	defer sink.Close()
+
+	// Create temp file for snapshot
+	tmpFile, err := os.CreateTemp("", "luma-snapshot-*.bin")
+	if err != nil {
+		sink.Cancel()
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	tmpFile.Close() // Close immediately, DB will open it
+
+	// Create snapshot in temp file
+	s.node.logger.Info("Creating snapshot", zap.String("path", tmpFile.Name()))
+	if err := s.node.db.Snapshot(tmpFile.Name()); err != nil {
+		sink.Cancel()
+		return fmt.Errorf("failed to snapshot db: %w", err)
+	}
+
+	// Copy temp file to sink
+	f, err := os.Open(tmpFile.Name())
+	if err != nil {
+		sink.Cancel()
+		return fmt.Errorf("failed to open snapshot file: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := io.Copy(sink, f); err != nil {
+		sink.Cancel()
+		return fmt.Errorf("failed to copy snapshot to sink: %w", err)
+	}
+
+	return nil
 }
 
 func (s *fsmSnapshot) Release() {}
+
+// ListCollections returns all collection names
+func (n *Node) ListCollections() ([]string, error) {
+	if n.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	return n.db.ListCollections()
+}
+
+// GetDocument retrieves a document
+func (n *Node) GetDocument(collection, id string) (map[string]interface{}, error) {
+	if n.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	// TODO: Forward to leader if not leader?
+	return n.db.Get(collection, id)
+}
+
+// RunQuery executes a query
+func (n *Node) RunQuery(collection string, query interface{}) ([]map[string]interface{}, error) {
+	if n.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+	return n.db.Query(collection, query)
+}
+
+// InsertDocument inserts a document
+func (n *Node) InsertDocument(collection string, doc map[string]interface{}) (string, error) {
+	if n.raft == nil {
+		// Fallback for non-raft mode tests
+		if n.db == nil {
+			return "", fmt.Errorf("database not initialized")
+		}
+		return n.db.Insert(collection, doc)
+	}
+
+	// Replicate via Raft
+	// We need to marshal the doc to bytes
+	docBytes, err := json.Marshal(doc)
+	if err != nil {
+		return "", err
+	}
+
+	cmd := &Command{
+		Op:         "set",
+		Collection: collection,
+		Value:      docBytes,
+		// Key generation needs to happen here or in Apply
+		// For simplicity, we assume ID is in doc or generated by DB.
+		// If generated by DB, we might have issue with Raft deterministic playback if ID generation is non-deterministic.
+		// Ideally, we generate ID here.
+	}
+
+	// Check if ID exists
+	if id, ok := doc["_id"].(string); ok {
+		cmd.Key = id
+	} else {
+		// Generate ID
+		cmd.Key = fmt.Sprintf("%d", time.Now().UnixNano()) // Simple ID for now
+		doc["_id"] = cmd.Key
+		// Remarshal with ID
+		docBytes, _ = json.Marshal(doc)
+		cmd.Value = docBytes
+	}
+
+	cmdBytes, err := json.Marshal(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	future := n.raft.Apply(cmdBytes, 5*time.Second)
+	if err := future.Error(); err != nil {
+		return "", err
+	}
+
+	// Apply returns err or result from FSM.Apply
+	// Our FSM.Apply returns error or nil
+	resp := future.Response()
+	if resp != nil {
+		if err, ok := resp.(error); ok {
+			return "", err
+		}
+	}
+
+	// Fire AfterInsert Event
+	// Note: We only fire if we are the leader (or in non-raft mode) to avoid duplicate events
+	// If Raft is used, this code runs on the leader.
+
+	// We fire asynchronously
+	go n.triggers.Fire(context.Background(), collection, events.EventInsert, doc, nil)
+
+	return cmd.Key, nil
+}
+
+// UpdateDocument updates a document
+func (n *Node) UpdateDocument(collection, id string, updates map[string]interface{}) error {
+	if n.db == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	// TODO: Raft replication
+	return n.db.Update(collection, id, updates)
+}
+
+// DeleteDocument deletes a document
+func (n *Node) DeleteDocument(collection, id string) error {
+	if n.raft == nil {
+		if n.db == nil {
+			return fmt.Errorf("database not initialized")
+		}
+		return n.db.Delete(collection, id)
+	}
+
+	cmd := &Command{
+		Op:         "delete",
+		Collection: collection,
+		Key:        id,
+	}
+
+	cmdBytes, err := json.Marshal(cmd)
+	if err != nil {
+		return err
+	}
+
+	future := n.raft.Apply(cmdBytes, 5*time.Second)
+	if err := future.Error(); err != nil {
+		return err
+	}
+
+	resp := future.Response()
+	if resp != nil {
+		if err, ok := resp.(error); ok {
+			return err
+		}
+	}
+	return nil
+}

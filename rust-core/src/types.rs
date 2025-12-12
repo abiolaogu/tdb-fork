@@ -85,7 +85,7 @@ impl Document {
     /// Calculate the size in bytes
     pub fn size_bytes(&self) -> usize {
         // Estimate: serialize to get accurate size
-        bincode::serialized_size(self).unwrap_or(0) as usize
+        rmp_serde::to_vec(self).map(|v| v.len()).unwrap_or(0)
     }
 
     /// Check if document has expired
@@ -350,4 +350,13 @@ impl Default for WriteBatch {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Query definition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Query {
+    #[serde(default)]
+    pub filter: Option<HashMap<String, Value>>,
+    #[serde(default)]
+    pub limit: Option<usize>,
 }

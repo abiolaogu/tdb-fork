@@ -13,7 +13,7 @@ use tokio::sync::mpsc;
 
 use crate::config::Config;
 use crate::memory::{MemTable, BlockCache};
-use crate::types::{KeyValue, KeyRange, SequenceNumber, Compression};
+use crate::types::{KeyValue, KeyRange, SequenceNumber, Compression, Query, Document, DocumentId};
 use crate::error::{Result, LumaError};
 use crate::wal::WriteAheadLog;
 
@@ -316,8 +316,12 @@ impl StorageEngine {
     }
 
     async fn compact_level(&self, level: usize) -> Result<()> {
-        // Simple compaction: merge all files in level to level+1
-        let files_to_compact: Vec<Arc<SSTable>> = {
+        let max_level = self.config.compaction.num_levels - 1;
+        
+        // 1. Identify input files from current level (Level L)
+        // For L0, we take all files to resolve overlaps.
+        // For L > 0, taking all files guarantees we form a comprehensive range.
+        let files_l = {
             let levels = self.levels.read();
             if level >= levels.len() || levels[level].is_empty() {
                 return Ok(());
@@ -325,31 +329,152 @@ impl StorageEngine {
             levels[level].clone()
         };
 
-        if files_to_compact.is_empty() {
+        if files_l.is_empty() {
             return Ok(());
         }
 
-        // Merge all entries
+        // 2. Identify overlapping files from next level (Level L+1)
+        let target_level = (level + 1).min(max_level);
+        let mut min_key_l = files_l[0].min_key().to_vec();
+        let mut max_key_l = files_l[0].max_key().to_vec();
+
+        for sst in &files_l {
+            if sst.min_key() < min_key_l.as_slice() {
+                min_key_l = sst.min_key().to_vec();
+            }
+            if sst.max_key() > max_key_l.as_slice() {
+                max_key_l = sst.max_key().to_vec();
+            }
+        }
+
+        let files_l_plus_1 = {
+            let levels = self.levels.read();
+            if target_level >= levels.len() {
+                Vec::new()
+            } else {
+                levels[target_level].iter()
+                    .filter(|sst| {
+                        // Check for overlap: !(sst.max < range.min || sst.min > range.max)
+                        // sst.max < min_key_l || sst.min > max_key_l
+                        let sst_min = sst.min_key();
+                        let sst_max = sst.max_key();
+                        !(sst_max < min_key_l.as_slice() || sst_min > max_key_l.as_slice())
+                    })
+                    .cloned()
+                    .collect()
+            }
+        };
+
+        let mut files_to_compact = files_l.clone();
+        files_to_compact.extend(files_l_plus_1.clone());
+
+        // 3. Merge all entries
         let mut entries: Vec<KeyValue> = Vec::new();
         for sstable in &files_to_compact {
+            // Optimization: use iterator instead of loading full vector
             entries.extend(sstable.scan(&[], &[0xff; 256])?);
         }
 
-        // Sort and deduplicate
+        // 4. Sort and deduplicate
         entries.sort_by(|a, b| (&a.key, std::cmp::Reverse(a.sequence))
             .cmp(&(&b.key, std::cmp::Reverse(b.sequence))));
         entries.dedup_by(|a, b| a.key == b.key);
 
         // Remove tombstones at max level
-        if level + 1 >= self.config.compaction.num_levels - 1 {
+        if target_level == max_level {
             entries.retain(|kv| !kv.deleted);
         }
 
-        // Write new SSTable
-        let target_level = (level + 1).min(self.config.compaction.num_levels - 1);
-        let sstable_path = self.data_dir
+        if entries.is_empty() {
+             // Remove inputs if result is empty
+             let mut levels = self.levels.write();
+             if level < levels.len() {
+                 levels[level].clear();
+             }
+             if target_level < levels.len() {
+                 levels[target_level].retain(|sst| !files_l_plus_1.iter().any(|f| Arc::ptr_eq(f, sst)));
+             }
+              // Update manifest
+             let mut manifest = self.manifest.write();
+             for sstable in &files_to_compact {
+                 manifest.remove_sstable(level, sstable.path()).ok(); // Ignore errors (might be in L or L+1)
+                 manifest.remove_sstable(target_level, sstable.path()).ok();
+             }
+             return Ok(());
+        }
+
+        // 5. Split and Write Output Files
+        let mut new_sstables = Vec::new();
+        let target_file_size = self.config.compaction.target_file_size_base;
+        
+        let mut current_entries = Vec::new();
+        let mut current_size = 0;
+
+        for kv in entries {
+            // Approximate size
+            let kv_size = kv.key.len() + kv.value.len() + 16; 
+            current_entries.push(kv);
+            current_size += kv_size;
+
+            if current_size >= target_file_size {
+                 let sstable = self.write_sstable(&current_entries, target_level).await?;
+                 new_sstables.push(sstable);
+                 current_entries.clear();
+                 current_size = 0;
+            }
+        }
+
+        if !current_entries.is_empty() {
+            let sstable = self.write_sstable(&current_entries, target_level).await?;
+            new_sstables.push(sstable);
+        }
+
+        // 6. Update Levels atomically (as much as possible)
+        {
+            let mut levels = self.levels.write();
+            
+            // Ensure target level exists
+            while levels.len() <= target_level {
+                levels.push(Vec::new());
+            }
+
+            // Remove old files from Level L (we took ALL of them)
+            if level < levels.len() {
+                levels[level].clear();
+            }
+
+            // Remove overlapping files from Level L+1
+            levels[target_level].retain(|sst| !files_l_plus_1.iter().any(|f| Arc::ptr_eq(f, sst)));
+
+            // Add new files to Level L+1
+            for sst in &new_sstables {
+                levels[target_level].push(sst.clone());
+            }
+            // Sort level L+1 by min_key to maintain sorted invariant for next runs
+            levels[target_level].sort_by(|a, b| a.min_key().cmp(b.min_key()));
+        }
+
+        // 7. Update Manifest
+        let mut manifest = self.manifest.write();
+        // Remove old
+        for sstable in &files_l {
+            manifest.remove_sstable(level, sstable.path()).ok();
+        }
+        for sstable in &files_l_plus_1 {
+            manifest.remove_sstable(target_level, sstable.path()).ok();
+        }
+        // Add new
+        for sstable in &new_sstables {
+            manifest.add_sstable(target_level, sstable.path())?;
+        }
+
+        Ok(())
+    }
+
+    async fn write_sstable(&self, entries: &[KeyValue], level: usize) -> Result<Arc<SSTable>> {
+         let sstable_path = self.data_dir
             .join("sstables")
-            .join(format!("{}_{}.sst", target_level, chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)));
+            .join(format!("{}_{}.sst", level, chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)));
 
         let mut builder = SSTableBuilder::new(
             &sstable_path,
@@ -357,36 +482,12 @@ impl StorageEngine {
             self.config.storage.bloom_bits_per_key,
         )?;
 
-        for kv in &entries {
+        for kv in entries {
             builder.add(&kv.key, kv)?;
         }
 
-        let new_sstable = Arc::new(builder.finish()?);
-
-        // Update levels
-        {
-            let mut levels = self.levels.write();
-
-            // Ensure target level exists
-            while levels.len() <= target_level {
-                levels.push(Vec::new());
-            }
-
-            // Remove old files from current level
-            levels[level].clear();
-
-            // Add new file to target level
-            levels[target_level].push(new_sstable);
-        }
-
-        // Update manifest
-        let mut manifest = self.manifest.write();
-        for sstable in &files_to_compact {
-            manifest.remove_sstable(level, sstable.path())?;
-        }
-        manifest.add_sstable(target_level, &sstable_path)?;
-
-        Ok(())
+        let sstable = builder.finish()?;
+        Ok(Arc::new(sstable))
     }
 
     async fn recover(&self) -> Result<()> {

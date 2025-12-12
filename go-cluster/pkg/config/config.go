@@ -38,6 +38,9 @@ type Config struct {
 	// Python AI service
 	PythonAIEndpoint string `mapstructure:"python_ai_endpoint"`
 
+	// Event Streaming (Redpanda)
+	RedpandaAddr []string `mapstructure:"redpanda_addr"`
+
 	// Multi-Tier Storage Policies
 	Tiering TieringConfig `mapstructure:"tiering" json:"tiering"`
 }
@@ -82,6 +85,7 @@ func DefaultConfig() *Config {
 		WriteTimeout:      10000,
 		RustCoreSocket:    "/tmp/tdb-core.sock",
 		PythonAIEndpoint:  "http://localhost:8000",
+		RedpandaAddr:      []string{"localhost:9092"},
 		Tiering: TieringConfig{
 			HotPolicy: TierPolicy{
 				Enabled: true,

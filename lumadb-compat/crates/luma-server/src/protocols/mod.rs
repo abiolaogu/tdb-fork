@@ -7,6 +7,7 @@ pub mod otlp;
 pub mod redis;
 pub mod clickhouse;
 pub mod druid;
+pub mod elasticsearch;
 
 // Re-export common types
 pub use crate::protocols::postgres::AuthConfig;

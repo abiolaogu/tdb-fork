@@ -40,6 +40,7 @@ pub mod remote;
 pub mod ingestion; // Phase 15: Observability
 pub mod stream; // Stream Processing Engine (Phase 10)
 pub mod distributed; // Phase: Raft Consensus
+pub mod timescale; // TimescaleDB extensions
 pub mod luma {
     pub mod v3 {
         tonic::include_proto!("luma.v3");

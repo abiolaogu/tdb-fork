@@ -285,7 +285,7 @@ Common patterns:
     }
     
     fn estimate_confidence(&self, sql: &str, query: &PromptQLQuery) -> f32 {
-        let mut confidence = 0.5;
+        let mut confidence: f32 = 0.5;
         
         // Higher confidence if tables are in context
         for table in &query.context.tables {
@@ -302,7 +302,7 @@ Common patterns:
             confidence += 0.1;
         }
         
-        confidence.min(0.95)
+        f32::min(confidence, 0.95)
     }
     
     fn generate_explanation(&self, query: &PromptQLQuery) -> String {

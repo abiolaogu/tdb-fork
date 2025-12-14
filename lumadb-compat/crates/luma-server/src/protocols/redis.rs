@@ -264,6 +264,181 @@ fn execute_command(store: &RedisStore, args: Vec<String>) -> RespValue {
             RespValue::BulkString(Some(info.to_string()))
         }
 
+        "DECR" => {
+            if args.len() < 2 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = &args[1];
+            let current = match store.get(key) {
+                Some(RedisValue::String(s)) => s.parse::<i64>().unwrap_or(0),
+                Some(RedisValue::Integer(i)) => i,
+                None => 0,
+                _ => return RespValue::Error("WRONGTYPE".to_string()),
+            };
+            let new_val = current - 1;
+            store.set(key.clone(), RedisValue::Integer(new_val));
+            RespValue::Integer(new_val)
+        }
+
+        "INCRBY" => {
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = &args[1];
+            let incr: i64 = args[2].parse().unwrap_or(0);
+            let current = match store.get(key) {
+                Some(RedisValue::String(s)) => s.parse::<i64>().unwrap_or(0),
+                Some(RedisValue::Integer(i)) => i,
+                None => 0,
+                _ => return RespValue::Error("WRONGTYPE".to_string()),
+            };
+            let new_val = current + incr;
+            store.set(key.clone(), RedisValue::Integer(new_val));
+            RespValue::Integer(new_val)
+        }
+
+        "DECRBY" => {
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = &args[1];
+            let decr: i64 = args[2].parse().unwrap_or(0);
+            let current = match store.get(key) {
+                Some(RedisValue::String(s)) => s.parse::<i64>().unwrap_or(0),
+                Some(RedisValue::Integer(i)) => i,
+                None => 0,
+                _ => return RespValue::Error("WRONGTYPE".to_string()),
+            };
+            let new_val = current - decr;
+            store.set(key.clone(), RedisValue::Integer(new_val));
+            RespValue::Integer(new_val)
+        }
+
+        "SETNX" => {
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            if store.get(&args[1]).is_none() {
+                store.set(args[1].clone(), RedisValue::String(args[2].clone()));
+                RespValue::Integer(1)
+            } else {
+                RespValue::Integer(0)
+            }
+        }
+
+        "SETEX" => {
+            if args.len() < 4 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            if let Ok(seconds) = args[2].parse::<u64>() {
+                store.set_ex(args[1].clone(), RedisValue::String(args[3].clone()), seconds);
+                RespValue::SimpleString("OK".to_string())
+            } else {
+                RespValue::Error("ERR invalid expire time".to_string())
+            }
+        }
+
+        "APPEND" => {
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = args[1].clone();
+            let append_val = &args[2];
+            let new_val = match store.get(&key) {
+                Some(RedisValue::String(s)) => format!("{}{}", s, append_val),
+                None => append_val.clone(),
+                _ => return RespValue::Error("WRONGTYPE".to_string()),
+            };
+            let len = new_val.len() as i64;
+            store.set(key, RedisValue::String(new_val));
+            RespValue::Integer(len)
+        }
+
+        "STRLEN" => {
+            if args.len() < 2 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            match store.get(&args[1]) {
+                Some(RedisValue::String(s)) => RespValue::Integer(s.len() as i64),
+                None => RespValue::Integer(0),
+                _ => RespValue::Error("WRONGTYPE".to_string()),
+            }
+        }
+
+        "GETSET" => {
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = args[1].clone();
+            let old = match store.get(&key) {
+                Some(RedisValue::String(s)) => RespValue::BulkString(Some(s)),
+                Some(RedisValue::Integer(i)) => RespValue::BulkString(Some(i.to_string())),
+                None => RespValue::BulkString(None),
+                _ => return RespValue::Error("WRONGTYPE".to_string()),
+            };
+            store.set(key, RedisValue::String(args[2].clone()));
+            old
+        }
+
+        "RENAME" => {
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            match store.get(&args[1]) {
+                Some(val) => {
+                    store.del(&args[1]);
+                    store.set(args[2].clone(), val);
+                    RespValue::SimpleString("OK".to_string())
+                }
+                None => RespValue::Error("ERR no such key".to_string()),
+            }
+        }
+
+        "SCAN" => {
+            // Simplified SCAN: returns all keys with cursor 0
+            let _cursor: u64 = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+            let pattern = args.iter().position(|a| a.to_uppercase() == "MATCH")
+                .map(|i| args.get(i + 1).cloned().unwrap_or_default())
+                .unwrap_or_else(|| "*".to_string());
+            let count = args.iter().position(|a| a.to_uppercase() == "COUNT")
+                .and_then(|i| args.get(i + 1).and_then(|s| s.parse().ok()))
+                .unwrap_or(10usize);
+            
+            let keys: Vec<RespValue> = store.keys(&pattern)
+                .into_iter()
+                .take(count)
+                .map(|k| RespValue::BulkString(Some(k)))
+                .collect();
+            
+            RespValue::Array(Some(vec![
+                RespValue::BulkString(Some("0".to_string())),
+                RespValue::Array(Some(keys)),
+            ]))
+        }
+
+        "ECHO" => {
+            if args.len() < 2 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            RespValue::BulkString(Some(args[1].clone()))
+        }
+
+        "CLIENT" => {
+            // CLIENT subcommands
+            if args.len() > 1 && args[1].to_uppercase() == "SETNAME" {
+                RespValue::SimpleString("OK".to_string())
+            } else if args.len() > 1 && args[1].to_uppercase() == "GETNAME" {
+                RespValue::BulkString(None)
+            } else {
+                RespValue::SimpleString("OK".to_string())
+            }
+        }
+
+        "SELECT" => {
+            // Database selection (all map to same db in LumaDB)
+            RespValue::SimpleString("OK".to_string())
+        }
+
         "COMMAND" => {
             // Return empty array for compatibility
             RespValue::Array(Some(vec![]))

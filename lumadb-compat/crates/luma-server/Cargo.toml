@@ -48,6 +48,8 @@ hmac = "0.12"
 pbkdf2 = "0.12"
 base64 = "0.21"
 reqwest = { version = "0.11", features = ["json"] }
+uuid = { workspace = true }
+chrono = { workspace = true }
 luma-protocol-core = { path = "../luma-core" }
 luma-postgres = { path = "../luma-postgres", optional = true }
 luma-mysql = { path = "../luma-mysql", optional = true }

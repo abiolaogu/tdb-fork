@@ -200,8 +200,36 @@ pub async fn run(
             }
         });
     
+    // GET /replicas_status - Replica status
+    let replicas_status = warp::path("replicas_status")
+        .and(warp::get())
+        .map(|| "Ok.\n");
+    
+    // GET /play - ClickHouse Play UI placeholder
+    let play = warp::path("play")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::html(r#"<!DOCTYPE html>
+<html><head><title>LumaDB - ClickHouse Play</title></head>
+<body style="font-family: sans-serif; padding: 20px;">
+<h1>LumaDB ClickHouse Play</h1>
+<textarea id="query" rows="5" cols="60" placeholder="Enter your SQL query..."></textarea>
+<br><button onclick="run()">Run Query</button>
+<pre id="result"></pre>
+<script>
+async function run() {
+  const q = document.getElementById('query').value;
+  const r = await fetch('/?query=' + encodeURIComponent(q + ' FORMAT JSON'));
+  document.getElementById('result').textContent = await r.text();
+}
+</script>
+</body></html>"#)
+        });
+    
     let routes = health
         .or(ping)
+        .or(replicas_status)
+        .or(play)
         .or(query_post)
         .or(query_get);
     

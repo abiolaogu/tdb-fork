@@ -6,6 +6,8 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use tracing::{info, debug, error};
 use crate::protocols::QueryProcessor;
+use uuid::Uuid;
+use chrono::Utc;
 
 /// Druid SQL query request
 #[derive(Debug, Deserialize)]
@@ -239,9 +241,92 @@ pub async fn run(
             }
         });
     
+    // GET /druid/v2/datasources - List data sources
+    let datasources = warp::path!("druid" / "v2" / "datasources")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::json(&serde_json::json!(["metrics", "traces", "logs"]))
+        });
+    
+    // GET /druid/v2/datasources/:name - Datasource info
+    let datasource_info = warp::path!("druid" / "v2" / "datasources" / String)
+        .and(warp::get())
+        .map(|name: String| {
+            warp::reply::json(&serde_json::json!({
+                "name": name,
+                "properties": {},
+                "segments": {
+                    "count": 100,
+                    "size": 1073741824
+                }
+            }))
+        });
+    
+    // GET /druid/v2/servers - List servers
+    let servers = warp::path!("druid" / "v2" / "servers")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::json(&serde_json::json!([{
+                "host": "localhost:8082",
+                "type": "historical",
+                "tier": "_default_tier",
+                "maxSize": 107374182400_i64
+            }]))
+        });
+    
+    // GET /health - Health check
+    let health = warp::path("health")
+        .and(warp::get())
+        .map(|| {
+            warp::reply::json(&serde_json::json!({"status": true}))
+        });
+    
+    // POST /druid/v2/sql/statements - Async SQL (Druid 0.24+)
+    let sql_statements = warp::path!("druid" / "v2" / "sql" / "statements")
+        .and(warp::post())
+        .and(warp::body::json())
+        .map(|req: DruidSqlRequest| {
+            warp::reply::json(&serde_json::json!({
+                "queryId": format!("query-{}", uuid::Uuid::new_v4()),
+                "state": "RUNNING",
+                "createdAt": chrono::Utc::now().to_rfc3339(),
+                "query": req.query,
+            }))
+        });
+    
+    // POST /druid/indexer/v1/task - Submit ingestion task
+    let submit_task = warp::path!("druid" / "indexer" / "v1" / "task")
+        .and(warp::post())
+        .and(warp::body::json::<serde_json::Value>())
+        .map(|_body: serde_json::Value| {
+            warp::reply::json(&serde_json::json!({
+                "task": format!("index_parallel_{}", uuid::Uuid::new_v4())
+            }))
+        });
+    
+    // GET /druid/indexer/v1/task/:id/status - Task status
+    let task_status = warp::path!("druid" / "indexer" / "v1" / "task" / String / "status")
+        .and(warp::get())
+        .map(|id: String| {
+            warp::reply::json(&serde_json::json!({
+                "id": id,
+                "status": {
+                    "status": "SUCCESS",
+                    "duration": 1000
+                }
+            }))
+        });
+    
     let routes = status
+        .or(health)
         .or(sql_api)
-        .or(native_api);
+        .or(native_api)
+        .or(datasources)
+        .or(datasource_info)
+        .or(servers)
+        .or(sql_statements)
+        .or(submit_task)
+        .or(task_status);
     
     info!("Druid Protocol Server listening on 0.0.0.0:{}", port);
     warp::serve(routes).run(([0, 0, 0, 0], port)).await;

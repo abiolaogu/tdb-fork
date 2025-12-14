@@ -29,6 +29,8 @@ tdigest = { workspace = true }
 reqwest = { workspace = true }
 zstd = { workspace = true }
 opentelemetry-proto = { workspace = true }
+parking_lot = "0.12"
+rand = { workspace = true }
 
 # Production Dependencies
 arrow = { version = "50.0", features = ["prettyprint"] }

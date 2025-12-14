@@ -39,6 +39,7 @@ pub use processor::{QueryProcessor, MockQueryProcessor, QueryRequest, QueryResul
 pub mod remote;
 pub mod ingestion; // Phase 15: Observability
 pub mod stream; // Stream Processing Engine (Phase 10)
+pub mod distributed; // Phase: Raft Consensus
 pub mod luma {
     pub mod v3 {
         tonic::include_proto!("luma.v3");

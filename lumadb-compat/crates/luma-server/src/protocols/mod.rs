@@ -8,6 +8,7 @@ pub mod redis;
 pub mod clickhouse;
 pub mod druid;
 pub mod elasticsearch;
+pub mod mysql;
 
 // Re-export common types
 pub use crate::protocols::postgres::AuthConfig;

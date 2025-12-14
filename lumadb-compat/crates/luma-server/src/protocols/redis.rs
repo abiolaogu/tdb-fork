@@ -17,13 +17,131 @@ pub enum RedisValue {
     Set(std::collections::HashSet<String>),
     Hash(HashMap<String, String>),
     SortedSet(Vec<(f64, String)>),
+    Stream(StreamData),
     Null,
+}
+
+/// Redis Stream data structure
+#[derive(Clone, Debug, Default)]
+pub struct StreamData {
+    entries: Vec<StreamEntry>,
+    last_id: u64,
+    last_seq: u64,
+}
+
+#[derive(Clone, Debug)]
+pub struct StreamEntry {
+    id: String,
+    timestamp: u64,
+    sequence: u64,
+    fields: HashMap<String, String>,
+}
+
+impl StreamData {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Generate next ID (timestamp-sequence)
+    fn next_id(&mut self) -> String {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+        
+        if now > self.last_id {
+            self.last_id = now;
+            self.last_seq = 0;
+        } else {
+            self.last_seq += 1;
+        }
+        format!("{}-{}", self.last_id, self.last_seq)
+    }
+
+    /// Add entry with auto-generated or provided ID
+    pub fn xadd(&mut self, id: Option<&str>, fields: HashMap<String, String>) -> String {
+        let entry_id = match id {
+            Some("*") | None => self.next_id(),
+            Some(explicit) => {
+                // Parse explicit ID
+                let parts: Vec<&str> = explicit.split('-').collect();
+                if parts.len() == 2 {
+                    let ts = parts[0].parse().unwrap_or(0);
+                    let seq = parts[1].parse().unwrap_or(0);
+                    self.last_id = ts;
+                    self.last_seq = seq;
+                }
+                explicit.to_string()
+            }
+        };
+
+        let parts: Vec<&str> = entry_id.split('-').collect();
+        let (timestamp, sequence) = if parts.len() == 2 {
+            (parts[0].parse().unwrap_or(0), parts[1].parse().unwrap_or(0))
+        } else {
+            (0, 0)
+        };
+
+        self.entries.push(StreamEntry {
+            id: entry_id.clone(),
+            timestamp,
+            sequence,
+            fields,
+        });
+        entry_id
+    }
+
+    /// Read entries in range
+    pub fn xrange(&self, start: &str, end: &str, count: Option<usize>) -> Vec<&StreamEntry> {
+        let start_ts = Self::parse_id(start);
+        let end_ts = Self::parse_id(end);
+
+        self.entries.iter()
+            .filter(|e| {
+                let ets = (e.timestamp, e.sequence);
+                ets >= start_ts && ets <= end_ts
+            })
+            .take(count.unwrap_or(usize::MAX))
+            .collect()
+    }
+
+    /// Read entries after ID
+    pub fn xread_after(&self, id: &str, count: Option<usize>) -> Vec<&StreamEntry> {
+        let after_ts = Self::parse_id(id);
+
+        self.entries.iter()
+            .filter(|e| (e.timestamp, e.sequence) > after_ts)
+            .take(count.unwrap_or(usize::MAX))
+            .collect()
+    }
+
+    fn parse_id(id: &str) -> (u64, u64) {
+        if id == "-" || id == "0" { return (0, 0); }
+        if id == "+" { return (u64::MAX, u64::MAX); }
+        let parts: Vec<&str> = id.split('-').collect();
+        if parts.len() == 2 {
+            (parts[0].parse().unwrap_or(0), parts[1].parse().unwrap_or(0))
+        } else {
+            (parts[0].parse().unwrap_or(0), 0)
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+}
+
+/// Pub/Sub subscriber
+#[derive(Clone)]
+pub struct Subscriber {
+    pub sender: tokio::sync::broadcast::Sender<(String, String)>,
 }
 
 /// Redis in-memory store
 pub struct RedisStore {
     data: Arc<DashMap<String, RedisValue>>,
     expiry: Arc<DashMap<String, std::time::Instant>>,
+    pubsub: Arc<DashMap<String, tokio::sync::broadcast::Sender<String>>>,
 }
 
 impl RedisStore {
@@ -31,6 +149,7 @@ impl RedisStore {
         Self {
             data: Arc::new(DashMap::new()),
             expiry: Arc::new(DashMap::new()),
+            pubsub: Arc::new(DashMap::new()),
         }
     }
 
@@ -71,6 +190,74 @@ impl RedisStore {
                 .map(|r| r.key().clone())
                 .collect()
         }
+    }
+
+    // === Stream Operations ===
+
+    /// XADD key [NOMKSTREAM] [MAXLEN|MINID [=|~] threshold] *|id field value [field value ...]
+    pub fn xadd(&self, key: &str, id: Option<&str>, fields: HashMap<String, String>) -> String {
+        let mut entry = self.data.entry(key.to_string()).or_insert_with(|| RedisValue::Stream(StreamData::new()));
+        if let RedisValue::Stream(ref mut stream) = entry.value_mut() {
+            stream.xadd(id, fields)
+        } else {
+            String::new()
+        }
+    }
+
+    /// XLEN key
+    pub fn xlen(&self, key: &str) -> i64 {
+        match self.get(key) {
+            Some(RedisValue::Stream(s)) => s.len() as i64,
+            _ => 0,
+        }
+    }
+
+    /// XRANGE key start end [COUNT count]
+    pub fn xrange(&self, key: &str, start: &str, end: &str, count: Option<usize>) -> Vec<(String, HashMap<String, String>)> {
+        match self.get(key) {
+            Some(RedisValue::Stream(s)) => {
+                s.xrange(start, end, count)
+                    .into_iter()
+                    .map(|e| (e.id.clone(), e.fields.clone()))
+                    .collect()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    /// XREAD [COUNT count] [BLOCK milliseconds] STREAMS key [key ...] id [id ...]
+    pub fn xread(&self, keys: &[&str], ids: &[&str], count: Option<usize>) -> Vec<(String, Vec<(String, HashMap<String, String>)>)> {
+        let mut result = Vec::new();
+        for (key, id) in keys.iter().zip(ids.iter()) {
+            if let Some(RedisValue::Stream(s)) = self.get(key) {
+                let entries: Vec<_> = s.xread_after(id, count)
+                    .into_iter()
+                    .map(|e| (e.id.clone(), e.fields.clone()))
+                    .collect();
+                if !entries.is_empty() {
+                    result.push((key.to_string(), entries));
+                }
+            }
+        }
+        result
+    }
+
+    // === Pub/Sub Operations ===
+
+    /// PUBLISH channel message
+    pub fn publish(&self, channel: &str, message: String) -> i64 {
+        if let Some(sender) = self.pubsub.get(channel) {
+            sender.send(message).map(|n| n as i64).unwrap_or(0)
+        } else {
+            0
+        }
+    }
+
+    /// Get/create channel for subscription
+    pub fn subscribe(&self, channel: &str) -> tokio::sync::broadcast::Receiver<String> {
+        self.pubsub.entry(channel.to_string())
+            .or_insert_with(|| tokio::sync::broadcast::channel(1024).0)
+            .subscribe()
     }
 }
 
@@ -448,6 +635,151 @@ fn execute_command(store: &RedisStore, args: Vec<String>) -> RespValue {
             RespValue::SimpleString("OK".to_string())
         }
 
+        // === Stream Commands ===
+        "XADD" => {
+            // XADD key [NOMKSTREAM] [MAXLEN|MINID [=|~] threshold] *|id field value [field value ...]
+            if args.len() < 4 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = &args[1];
+            let id = if args[2] == "*" { None } else { Some(args[2].as_str()) };
+            
+            // Parse field-value pairs (starting from args[3] or args[4] if id is explicit)
+            let start_idx = 3;
+            let mut fields = HashMap::new();
+            let mut i = start_idx;
+            while i + 1 < args.len() {
+                fields.insert(args[i].clone(), args[i + 1].clone());
+                i += 2;
+            }
+            
+            let entry_id = store.xadd(key, id, fields);
+            RespValue::BulkString(Some(entry_id))
+        }
+
+        "XLEN" => {
+            if args.len() < 2 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            RespValue::Integer(store.xlen(&args[1]))
+        }
+
+        "XRANGE" => {
+            // XRANGE key start end [COUNT count]
+            if args.len() < 4 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = &args[1];
+            let start = &args[2];
+            let end = &args[3];
+            let count = args.iter().position(|a| a.to_uppercase() == "COUNT")
+                .and_then(|i| args.get(i + 1).and_then(|s| s.parse().ok()));
+            
+            let entries = store.xrange(key, start, end, count);
+            let result: Vec<RespValue> = entries.into_iter()
+                .map(|(id, fields)| {
+                    let field_arr: Vec<RespValue> = fields.into_iter()
+                        .flat_map(|(k, v)| vec![
+                            RespValue::BulkString(Some(k)),
+                            RespValue::BulkString(Some(v)),
+                        ])
+                        .collect();
+                    RespValue::Array(Some(vec![
+                        RespValue::BulkString(Some(id)),
+                        RespValue::Array(Some(field_arr)),
+                    ]))
+                })
+                .collect();
+            RespValue::Array(Some(result))
+        }
+
+        "XREAD" => {
+            // XREAD [COUNT count] [BLOCK milliseconds] STREAMS key [key ...] id [id ...]
+            let streams_idx = args.iter().position(|a| a.to_uppercase() == "STREAMS");
+            if streams_idx.is_none() {
+                return RespValue::Error("ERR STREAMS keyword missing".to_string());
+            }
+            let streams_idx = streams_idx.unwrap();
+            
+            let count = args.iter().position(|a| a.to_uppercase() == "COUNT")
+                .and_then(|i| args.get(i + 1).and_then(|s| s.parse().ok()));
+            
+            // After STREAMS, first half are keys, second half are IDs
+            let rest = &args[(streams_idx + 1)..];
+            let mid = rest.len() / 2;
+            let keys: Vec<&str> = rest[..mid].iter().map(|s| s.as_str()).collect();
+            let ids: Vec<&str> = rest[mid..].iter().map(|s| s.as_str()).collect();
+            
+            let results = store.xread(&keys, &ids, count);
+            if results.is_empty() {
+                return RespValue::Array(None);
+            }
+            
+            let result: Vec<RespValue> = results.into_iter()
+                .map(|(key, entries)| {
+                    let entries_arr: Vec<RespValue> = entries.into_iter()
+                        .map(|(id, fields)| {
+                            let field_arr: Vec<RespValue> = fields.into_iter()
+                                .flat_map(|(k, v)| vec![
+                                    RespValue::BulkString(Some(k)),
+                                    RespValue::BulkString(Some(v)),
+                                ])
+                                .collect();
+                            RespValue::Array(Some(vec![
+                                RespValue::BulkString(Some(id)),
+                                RespValue::Array(Some(field_arr)),
+                            ]))
+                        })
+                        .collect();
+                    RespValue::Array(Some(vec![
+                        RespValue::BulkString(Some(key)),
+                        RespValue::Array(Some(entries_arr)),
+                    ]))
+                })
+                .collect();
+            RespValue::Array(Some(result))
+        }
+
+        "XREVRANGE" => {
+            // XREVRANGE key end start [COUNT count]
+            if args.len() < 4 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let key = &args[1];
+            let end = &args[2];
+            let start = &args[3];
+            let count = args.iter().position(|a| a.to_uppercase() == "COUNT")
+                .and_then(|i| args.get(i + 1).and_then(|s| s.parse().ok()));
+            
+            let mut entries = store.xrange(key, start, end, count);
+            entries.reverse();
+            let result: Vec<RespValue> = entries.into_iter()
+                .map(|(id, fields)| {
+                    let field_arr: Vec<RespValue> = fields.into_iter()
+                        .flat_map(|(k, v)| vec![
+                            RespValue::BulkString(Some(k)),
+                            RespValue::BulkString(Some(v)),
+                        ])
+                        .collect();
+                    RespValue::Array(Some(vec![
+                        RespValue::BulkString(Some(id)),
+                        RespValue::Array(Some(field_arr)),
+                    ]))
+                })
+                .collect();
+            RespValue::Array(Some(result))
+        }
+
+        // === Pub/Sub Commands ===
+        "PUBLISH" => {
+            // PUBLISH channel message
+            if args.len() < 3 {
+                return RespValue::Error("ERR wrong number of arguments".to_string());
+            }
+            let subscribers = store.publish(&args[1], args[2].clone());
+            RespValue::Integer(subscribers)
+        }
+
         // === List Commands ===
         "LPUSH" => {
             if args.len() < 3 {
@@ -781,6 +1113,7 @@ fn execute_command(store: &RedisStore, args: Vec<String>) -> RespValue {
                 Some(RedisValue::Set(_)) => RespValue::SimpleString("set".to_string()),
                 Some(RedisValue::Hash(_)) => RespValue::SimpleString("hash".to_string()),
                 Some(RedisValue::SortedSet(_)) => RespValue::SimpleString("zset".to_string()),
+                Some(RedisValue::Stream(_)) => RespValue::SimpleString("stream".to_string()),
                 Some(RedisValue::Null) | None => RespValue::SimpleString("none".to_string()),
             }
         }

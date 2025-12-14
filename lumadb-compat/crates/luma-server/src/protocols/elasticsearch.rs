@@ -145,12 +145,14 @@ impl ElasticsearchStore {
     pub fn search(&self, index: &str, query: &SearchQuery) -> SearchResult {
         let mut hits = Vec::new();
         let mut total = 0;
+        let mut all_docs: Vec<Document> = Vec::new();
 
         if let Some(idx) = self.indices.get(index) {
             for doc_ref in idx.documents.iter() {
-                let doc = doc_ref.value();
-                if self.matches_query(doc, &query.query) {
+                let doc = doc_ref.value().clone();
+                if self.matches_query(&doc, &query.query) {
                     total += 1;
+                    all_docs.push(doc.clone());
                     if hits.len() < query.size {
                         hits.push(SearchHit {
                             index: index.to_string(),
@@ -163,6 +165,11 @@ impl ElasticsearchStore {
             }
         }
 
+        // Process aggregations
+        let aggregations = query.aggs.as_ref().map(|aggs| {
+            self.compute_aggregations(&all_docs, aggs)
+        });
+
         SearchResult {
             took: 1,
             timed_out: false,
@@ -171,8 +178,154 @@ impl ElasticsearchStore {
                 max_score: hits.first().map(|_| 1.0),
                 hits,
             },
-            aggregations: None,
+            aggregations,
         }
+    }
+
+    /// Compute aggregations on matching documents
+    fn compute_aggregations(&self, docs: &[Document], aggs: &Value) -> Value {
+        let mut result = json!({});
+        
+        if let Some(aggs_obj) = aggs.as_object() {
+            for (agg_name, agg_def) in aggs_obj {
+                // Terms aggregation
+                if let Some(terms) = agg_def.get("terms") {
+                    if let Some(field) = terms.get("field").and_then(|f| f.as_str()) {
+                        let size = terms.get("size").and_then(|s| s.as_u64()).unwrap_or(10) as usize;
+                        let mut counts: HashMap<String, u64> = HashMap::new();
+                        
+                        for doc in docs {
+                            if let Some(val) = doc.source.get(field) {
+                                let key = match val {
+                                    Value::String(s) => s.clone(),
+                                    Value::Number(n) => n.to_string(),
+                                    Value::Bool(b) => b.to_string(),
+                                    _ => continue,
+                                };
+                                *counts.entry(key).or_insert(0) += 1;
+                            }
+                        }
+                        
+                        let mut buckets: Vec<_> = counts.into_iter().collect();
+                        buckets.sort_by(|a, b| b.1.cmp(&a.1));
+                        buckets.truncate(size);
+                        
+                        result[agg_name] = json!({
+                            "buckets": buckets.into_iter().map(|(key, count)| {
+                                json!({"key": key, "doc_count": count})
+                            }).collect::<Vec<_>>()
+                        });
+                    }
+                }
+                // Avg aggregation
+                else if let Some(avg_def) = agg_def.get("avg") {
+                    if let Some(field) = avg_def.get("field").and_then(|f| f.as_str()) {
+                        let (sum, count) = docs.iter().fold((0.0, 0), |(sum, count), doc| {
+                            if let Some(Value::Number(n)) = doc.source.get(field) {
+                                (sum + n.as_f64().unwrap_or(0.0), count + 1)
+                            } else {
+                                (sum, count)
+                            }
+                        });
+                        result[agg_name] = json!({"value": if count > 0 { sum / count as f64 } else { 0.0 }});
+                    }
+                }
+                // Sum aggregation
+                else if let Some(sum_def) = agg_def.get("sum") {
+                    if let Some(field) = sum_def.get("field").and_then(|f| f.as_str()) {
+                        let sum: f64 = docs.iter().filter_map(|doc| {
+                            doc.source.get(field).and_then(|v| v.as_f64())
+                        }).sum();
+                        result[agg_name] = json!({"value": sum});
+                    }
+                }
+                // Min aggregation
+                else if let Some(min_def) = agg_def.get("min") {
+                    if let Some(field) = min_def.get("field").and_then(|f| f.as_str()) {
+                        let min_val = docs.iter().filter_map(|doc| {
+                            doc.source.get(field).and_then(|v| v.as_f64())
+                        }).fold(f64::MAX, f64::min);
+                        result[agg_name] = json!({"value": if min_val == f64::MAX { Value::Null } else { json!(min_val) }});
+                    }
+                }
+                // Max aggregation
+                else if let Some(max_def) = agg_def.get("max") {
+                    if let Some(field) = max_def.get("field").and_then(|f| f.as_str()) {
+                        let max_val = docs.iter().filter_map(|doc| {
+                            doc.source.get(field).and_then(|v| v.as_f64())
+                        }).fold(f64::MIN, f64::max);
+                        result[agg_name] = json!({"value": if max_val == f64::MIN { Value::Null } else { json!(max_val) }});
+                    }
+                }
+                // Value count
+                else if let Some(count_def) = agg_def.get("value_count") {
+                    if let Some(field) = count_def.get("field").and_then(|f| f.as_str()) {
+                        let count = docs.iter().filter(|doc| doc.source.get(field).is_some()).count();
+                        result[agg_name] = json!({"value": count});
+                    }
+                }
+                // Cardinality
+                else if let Some(card_def) = agg_def.get("cardinality") {
+                    if let Some(field) = card_def.get("field").and_then(|f| f.as_str()) {
+                        let unique: std::collections::HashSet<String> = docs.iter()
+                            .filter_map(|doc| doc.source.get(field))
+                            .map(|v| v.to_string())
+                            .collect();
+                        result[agg_name] = json!({"value": unique.len()});
+                    }
+                }
+                // Histogram
+                else if let Some(hist_def) = agg_def.get("histogram") {
+                    if let Some(field) = hist_def.get("field").and_then(|f| f.as_str()) {
+                        let interval = hist_def.get("interval").and_then(|i| i.as_f64()).unwrap_or(10.0);
+                        let mut buckets: HashMap<i64, u64> = HashMap::new();
+                        
+                        for doc in docs {
+                            if let Some(Value::Number(n)) = doc.source.get(field) {
+                                let val = n.as_f64().unwrap_or(0.0);
+                                let bucket_key = ((val / interval).floor() * interval) as i64;
+                                *buckets.entry(bucket_key).or_insert(0) += 1;
+                            }
+                        }
+                        
+                        let mut sorted_buckets: Vec<_> = buckets.into_iter().collect();
+                        sorted_buckets.sort_by_key(|(k, _)| *k);
+                        
+                        result[agg_name] = json!({
+                            "buckets": sorted_buckets.into_iter().map(|(key, count)| {
+                                json!({"key": key, "doc_count": count})
+                            }).collect::<Vec<_>>()
+                        });
+                    }
+                }
+                // Stats aggregation (combined)
+                else if let Some(stats_def) = agg_def.get("stats") {
+                    if let Some(field) = stats_def.get("field").and_then(|f| f.as_str()) {
+                        let values: Vec<f64> = docs.iter()
+                            .filter_map(|doc| doc.source.get(field).and_then(|v| v.as_f64()))
+                            .collect();
+                        
+                        if values.is_empty() {
+                            result[agg_name] = json!({"count": 0, "min": null, "max": null, "avg": null, "sum": 0});
+                        } else {
+                            let count = values.len();
+                            let sum: f64 = values.iter().sum();
+                            let min = values.iter().cloned().fold(f64::MAX, f64::min);
+                            let max = values.iter().cloned().fold(f64::MIN, f64::max);
+                            result[agg_name] = json!({
+                                "count": count,
+                                "min": min,
+                                "max": max,
+                                "avg": sum / count as f64,
+                                "sum": sum
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        result
     }
 
     /// Check if document matches query

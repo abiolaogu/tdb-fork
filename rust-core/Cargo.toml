@@ -69,6 +69,9 @@ sha2 = "0.10"
 md5 = "0.7"
 tokio-postgres = "0.7"
 
+# CPU detection
+num_cpus = "1.16"
+
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -80,6 +83,8 @@ default = ["compression"]
 compression = []
 python = ["pyo3"]
 uniffi-bindings = ["uniffi"]
+dpdk = []    # Enable DPDK kernel-bypass networking
+rdma = []    # Enable RDMA/InfiniBand support
 
 [[bench]]
 name = "storage_bench"

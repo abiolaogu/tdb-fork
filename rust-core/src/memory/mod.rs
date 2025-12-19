@@ -9,10 +9,12 @@
 mod memtable;
 mod cache;
 mod arena;
+pub mod hot_cache;
 
 pub use memtable::MemTable;
 pub use cache::BlockCache;
 pub use arena::Arena;
+pub use hot_cache::HotDataCache;
 
 use crate::types::KeyValue;
 use crate::error::Result;

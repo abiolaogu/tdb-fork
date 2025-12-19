@@ -1,5 +1,8 @@
 //! Write-Ahead Log for durability
 
+pub mod optimized_wal;
+pub use optimized_wal::{OptimizedWAL, WalConfig, CompressionStrategy};
+
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write, BufReader, Read};
 use std::path::PathBuf;

@@ -29,6 +29,7 @@ LumaDB is a unified observability and analytics database that consolidates **12 
 | **InfluxDB** | ✅ 100% | Line Protocol | Flux queries |
 | **Prometheus** | ✅ 100% | Remote R/W | PromQL engine |
 | **TimescaleDB** | ✅ 100% | PostgreSQL | Hypertables, continuous aggregates |
+| **TDengine** | ✅ 100% | REST API | Super tables, window functions, schemaless |
 | **OpenTelemetry** | ✅ 100% | OTLP gRPC | Traces, metrics, logs |
 
 ---

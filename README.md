@@ -82,6 +82,19 @@
 - **Natural Language Queries**: Ask questions in plain English
 - **Query Translation**: AI converts natural language to LQL/JQL
 
+### Universal Multi-Query Language Support (New v2.7)
+- **11 Dialect Parsers**: Native support for InfluxQL, Flux, PromQL, MetricsQL, TimescaleDB, QuestDB, ClickHouse, Druid, OpenTSDB, Graphite
+- **Auto-Detection**: Automatically detect query dialect with confidence scoring
+- **Cross-Dialect Translation**: Translate queries between any supported dialects
+- **Unified IR**: All queries compile to a common Intermediate Representation
+
+### TDengine Drop-In Replacement (New v2.7)
+- **REST API Compatibility**: Full `/rest/sql` and `/rest/login` endpoints
+- **Schemaless Ingestion**: InfluxDB line protocol, OpenTSDB JSON/telnet
+- **Window Functions**: INTERVAL, SLIDING, SESSION, STATE_WINDOW
+- **Aggregations**: COUNT, SUM, AVG, FIRST, LAST, TWA, SPREAD, APERCENTILE
+- **Super Tables**: CREATE STABLE, TAGS, subtable inheritance
+
 ### Developer Experience
 - **Three Query Languages**: LQL (SQL-like), NQL (Natural), JQL (JSON)
 - **TypeScript SDK**: Full type safety and IntelliSense

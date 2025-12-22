@@ -6,12 +6,25 @@
 
 - [User Manual](user_manual.md): Getting started guide.
 - [Architecture](architecture_design.md): How it works under the hood.
-- [Training](training_manual.md): Become a LumaDB expert.
+# LumaDB Documentation
 
-## Key Features
+Welcome to LumaDB documentation.
 
-- **Hybrid Storage**: RAM + SSD + HDD tiering.
-- **AI-Native**: Built-in Vector Search.
-- **Multi-Model**: SQL, Document, and Vector support.
+## Getting Started
+- [Quick Start](tutorials/quick-start.md)
+- [Installation](deployment/installation.md)
+- [User Manual](user_manual.md)
 
-[Get Started](user_manual.md){ .md-button .md-button--primary }
+## Features
+- [Platform Capabilities](platform_capabilities.md)
+- [Multi-Dialect Support](multi-dialect-support.md) **NEW**
+- [TDengine Compatibility](tdengine-compatibility.md) **NEW**
+- [Superset Integration](SUPERSET_INTEGRATION.md)
+
+## Architecture
+- [Architecture Design](architecture_design.md)
+- [Technical Specification](technical_specification.md)
+
+## Reference
+- [API Reference](api-reference/)
+- [Deployment Guide](deployment_guide.md)

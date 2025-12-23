@@ -1,0 +1,67 @@
+[package]
+name = "lumadb-storage"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "High-performance storage engine for LumaDB"
+
+[dependencies]
+lumadb-common = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Storage
+sled = { workspace = true }
+memmap2 = { workspace = true }
+
+# Columnar
+arrow = { workspace = true }
+parquet = { workspace = true }
+
+# Full-text search
+tantivy = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bincode = { workspace = true }
+bytes = { workspace = true }
+
+# Compression
+lz4_flex = { workspace = true }
+zstd = { workspace = true }
+
+# Concurrency
+crossbeam = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+crossbeam-skiplist = { workspace = true }
+
+# Utils
+uuid = { workspace = true }
+chrono = { workspace = true }
+crc32fast = { workspace = true }
+xxhash-rust = { workspace = true }
+roaring = { workspace = true }
+rand = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+criterion = { workspace = true }
+proptest = { workspace = true }
+
+[features]
+default = ["compression"]
+compression = []

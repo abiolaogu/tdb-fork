@@ -1,0 +1,158 @@
+# Cargo.toml - LumaDB Pure Rust Workspace
+
+[workspace]
+resolver = "2"
+members = [
+    "lumadb",
+    "lumadb-api",
+    "lumadb-protocol",
+    "lumadb-streaming",
+    "lumadb-query",
+    "lumadb-storage",
+    "lumadb-raft",
+    "lumadb-txn",
+    "lumadb-cluster",
+    "lumadb-security",
+    "lumadb-common",
+    "lumadb-admin",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+license = "Apache-2.0"
+repository = "https://github.com/abiolaogu/LumaDB"
+homepage = "https://lumadb.io"
+documentation = "https://docs.lumadb.io"
+authors = ["Abiola Ogunsakin <abiola@billyronks.com>"]
+
+[workspace.dependencies]
+# Async Runtime
+tokio = { version = "1.37", features = ["full", "tracing"] }
+tokio-util = { version = "0.7", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+
+# Web Framework
+actix-web = { version = "4.5", features = ["rustls-0_23"] }
+actix-rt = "2.9"
+actix-cors = "0.7"
+
+# GraphQL
+async-graphql = { version = "7.0", features = ["tracing", "apollo_tracing"] }
+async-graphql-actix-web = "7.0"
+
+# gRPC
+tonic = { version = "0.12", features = ["tls"] }
+prost = "0.13"
+prost-types = "0.13"
+
+# WebSocket
+tokio-tungstenite = "0.21"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+rkyv = { version = "0.7", features = ["validation"] }
+bytes = { version = "1.5", features = ["serde"] }
+
+# Parsing
+pest = "2.7"
+pest_derive = "2.7"
+sqlparser = { version = "0.43", features = ["visitor"] }
+nom = "7.1"
+
+# Storage - using sled instead of rocksdb for easier compilation
+sled = "0.34"
+arrow = "53"
+parquet = "53"
+tantivy = "0.22"
+
+# Networking
+socket2 = "0.5"
+tokio-stream = { version = "0.1", features = ["net"] }
+
+# Concurrency
+crossbeam = "0.8"
+dashmap = "5.5"
+parking_lot = "0.12"
+crossbeam-skiplist = "0.1"
+
+# Raft
+raft = "0.7"
+protobuf = "3.4"
+
+# Security
+rustls = "0.23"
+rustls-pemfile = "2.0"
+ring = "0.17"
+jsonwebtoken = "9.3"
+sha2 = "0.10"
+hmac = "0.12"
+pbkdf2 = "0.12"
+base64 = "0.21"
+hex = "0.4"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+metrics = "0.22"
+metrics-exporter-prometheus = "0.14"
+prometheus = "0.13"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# Error Handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Utils
+once_cell = "1.19"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+rand = "0.8"
+crc32fast = "1.3"
+lz4_flex = "0.11"
+zstd = "0.13"
+memmap2 = "0.9"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+roaring = "0.10"
+num_cpus = "1.16"
+
+# Testing
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+rstest = "0.19"
+tempfile = "3.8"
+
+# Internal crates
+lumadb-common = { path = "lumadb-common" }
+lumadb-storage = { path = "lumadb-storage" }
+lumadb-streaming = { path = "lumadb-streaming" }
+lumadb-query = { path = "lumadb-query" }
+lumadb-protocol = { path = "lumadb-protocol" }
+lumadb-security = { path = "lumadb-security" }
+lumadb-raft = { path = "lumadb-raft" }
+lumadb-txn = { path = "lumadb-txn" }
+lumadb-cluster = { path = "lumadb-cluster" }
+lumadb-api = { path = "lumadb-api" }
+lumadb-admin = { path = "lumadb-admin" }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
+
+[profile.release.package."*"]
+opt-level = 3
+
+[profile.bench]
+opt-level = 3
+lto = "thin"
+debug = true

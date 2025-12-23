@@ -1,0 +1,49 @@
+[package]
+name = "lumadb-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "API layer for LumaDB (REST, GraphQL, gRPC, WebSocket)"
+
+[dependencies]
+lumadb-common = { workspace = true }
+lumadb-query = { workspace = true }
+lumadb-streaming = { workspace = true }
+lumadb-security = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Web Framework
+actix-web = { workspace = true }
+actix-rt = { workspace = true }
+actix-cors = { workspace = true }
+
+# GraphQL
+async-graphql = { workspace = true }
+async-graphql-actix-web = { workspace = true }
+
+# gRPC
+tonic = { workspace = true }
+prost = { workspace = true }
+
+# WebSocket
+tokio-tungstenite = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Utils
+uuid = { workspace = true }

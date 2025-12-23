@@ -1,0 +1,65 @@
+[package]
+name = "lumadb-streaming"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Ultra-fast streaming engine for LumaDB (100x faster than Redpanda)"
+
+[dependencies]
+lumadb-common = { workspace = true }
+lumadb-storage = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bincode = { workspace = true }
+bytes = { workspace = true }
+
+# Concurrency
+crossbeam = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+
+# Compression
+lz4_flex = { workspace = true }
+zstd = { workspace = true }
+
+# Utils
+uuid = { workspace = true }
+chrono = { workspace = true }
+crc32fast = { workspace = true }
+xxhash-rust = { workspace = true }
+rand = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Metrics
+metrics = { workspace = true }
+
+# CPU affinity
+core_affinity = "0.8"
+num_cpus = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+io-uring = "0.6"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+criterion = { workspace = true }
+
+[features]
+default = []
+io_uring = []

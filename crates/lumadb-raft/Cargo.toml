@@ -1,0 +1,37 @@
+[package]
+name = "lumadb-raft"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Multi-Raft consensus for LumaDB"
+
+[dependencies]
+lumadb-common = { workspace = true }
+lumadb-storage = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bincode = { workspace = true }
+
+# Concurrency
+crossbeam = { workspace = true }
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Utils
+rand = { workspace = true }

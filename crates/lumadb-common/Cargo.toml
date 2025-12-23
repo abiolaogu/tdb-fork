@@ -1,0 +1,41 @@
+[package]
+name = "lumadb-common"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Common utilities and types for LumaDB"
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging/Tracing
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Metrics
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+prometheus = { workspace = true }
+
+# Utils
+uuid = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+once_cell = { workspace = true }
+tokio = { workspace = true }
+
+# Configuration
+toml = "0.8"
+
+[dev-dependencies]
+tempfile = { workspace = true }

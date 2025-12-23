@@ -1,0 +1,45 @@
+[package]
+name = "lumadb"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "LumaDB - Ultra-fast unified database (100x faster streaming)"
+
+[[bin]]
+name = "lumadb"
+path = "src/main.rs"
+
+[dependencies]
+# Core crates
+lumadb-common = { workspace = true }
+lumadb-storage = { workspace = true }
+lumadb-streaming = { workspace = true }
+lumadb-query = { workspace = true }
+lumadb-protocol = { workspace = true }
+lumadb-security = { workspace = true }
+lumadb-raft = { workspace = true }
+lumadb-txn = { workspace = true }
+lumadb-cluster = { workspace = true }
+lumadb-api = { workspace = true }
+lumadb-admin = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+actix-rt = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }

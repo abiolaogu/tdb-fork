@@ -1,0 +1,47 @@
+[package]
+name = "lumadb-query"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Query engine for LumaDB with LQL and SQL support"
+
+[dependencies]
+lumadb-common = { workspace = true }
+lumadb-storage = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Parsing
+pest = { workspace = true }
+pest_derive = { workspace = true }
+sqlparser = { workspace = true }
+
+# Columnar
+arrow = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Concurrency
+dashmap = { workspace = true }
+parking_lot = { workspace = true }
+
+# Utils
+chrono = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+criterion = { workspace = true }

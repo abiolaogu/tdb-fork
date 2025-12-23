@@ -75,6 +75,17 @@ md5 = "0.7"
 
 # CPU detection
 num_cpus = "1.16"
+unicode-segmentation = "1.12.0"
+roaring = "0.11.3"
+core_affinity = "0.8.3"
+# raft = "0.7.0"
+async-graphql = "7.0.17"
+pest = "2.8.4"
+pest_derive = "2.8.4"
+protobuf = "3.7.2"
+[target.'cfg(target_os = "linux")'.dependencies]
+io-uring = "0.6"
+
 
 
 [dev-dependencies]

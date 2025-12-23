@@ -167,7 +167,7 @@ impl GorillaEncoder {
     }
 
     /// Finish encoding and return compressed data
-    pub fn finish(mut self) -> Vec<u8> {
+    pub fn finish(self) -> Vec<u8> {
         // Write sample count header
         let mut result = Vec::new();
         result.extend(&self.sample_count.to_le_bytes());
@@ -263,7 +263,7 @@ impl<'a> GorillaDecoder<'a> {
             v - 2047
         } else {
             // '1111' - 32 bit delta
-            let v = self.buffer.read_bits(32)? as i64;
+            let v = self.buffer.read_bits(32)? as i32 as i64;
             v
         };
         
@@ -435,5 +435,44 @@ mod tests {
         // Expect at least 2x compression for typical data
         // Note: Gorilla typically achieves 2-4x for most time-series data
         assert!(ratio >= 2.0, "Expected at least 2x compression, got {:.1}x", ratio);
+    }
+
+    #[test]
+    fn test_compression_empty() {
+        let samples = Vec::new();
+        let compressed = compress_samples(&samples);
+        assert!(compressed.is_empty(), "Compressed empty samples should be empty, got {} bytes", compressed.len());
+        
+        let decompressed = decompress_samples(&compressed);
+        assert!(decompressed.is_empty(), "Decompressed empty data should be empty");
+    }
+
+    #[test]
+    fn test_compression_random() {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        
+        let mut samples = Vec::new();
+        let base_time = 1600000000000i64;
+        
+        for i in 0..100 {
+            // Random time deltas to stress delta-delta
+            let delta = rng.gen_range(100..2000); 
+            let time = base_time + i * 1000 + delta;
+            // Random values to stress XOR
+            let value = rng.gen_range(0.0..100.0);
+            samples.push(Sample { timestamp_ms: time, value });
+        }
+        
+        let compressed = compress_samples(&samples);
+        let decompressed = decompress_samples(&compressed);
+        
+        assert_eq!(samples.len(), decompressed.len());
+        
+        for (i, (orig, dec)) in samples.iter().zip(decompressed.iter()).enumerate() {
+            assert_eq!(orig.timestamp_ms, dec.timestamp_ms, "Timestamp mismatch at index {}", i);
+            // Relaxed f64 comparison
+            assert!((orig.value - dec.value).abs() < 1e-10, "Value mismatch at index {}: {} vs {}", i, orig.value, dec.value);
+        }
     }
 }

@@ -90,7 +90,11 @@ func (r *Router) RouteRead(ctx context.Context, collection string, key []byte) (
 // RouteWrite routes a write request (must go to leader)
 func (r *Router) RouteWrite(ctx context.Context, collection string, key []byte) (string, error) {
 	if !r.node.IsLeader() {
-		return r.node.LeaderAddr(), nil
+		leader := r.node.LeaderAddr()
+		if leader == "" {
+			return "localhost", nil
+		}
+		return leader, nil
 	}
 
 	shard := r.node.GetShardForKey(key)

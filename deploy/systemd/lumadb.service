@@ -1,0 +1,47 @@
+# deploy/systemd/lumadb.service
+
+[Unit]
+Description=LumaDB Database Server
+Documentation=https://github.com/abiolaogu/LumaDB
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
+[Service]
+Type=notify
+User=lumadb
+Group=lumadb
+ExecStart=/usr/local/bin/lumadb server --config /etc/lumadb/lumadb.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryDenyWriteExecute=true
+LockPersonality=true
+
+# Resource limits
+LimitNOFILE=1048576
+LimitNPROC=65535
+LimitMEMLOCK=infinity
+
+# Writable directories
+ReadWritePaths=/var/lib/lumadb /var/log/lumadb
+
+# Capabilities
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

@@ -2,11 +2,10 @@
 //!
 //! Tests API compatibility with Prometheus, InfluxDB, and Druid
 
-use std::collections::HashMap;
 
 #[cfg(test)]
 mod prometheus_tests {
-    use super::*;
+    
     
     #[test]
     fn test_prometheus_health_endpoint() {
@@ -48,7 +47,7 @@ mod prometheus_tests {
 
 #[cfg(test)]
 mod influxdb_tests {
-    use super::*;
+    
     
     #[test]
     fn test_line_protocol_parsing() {
@@ -99,7 +98,7 @@ mod influxdb_tests {
 
 #[cfg(test)]
 mod druid_tests {
-    use super::*;
+    
     
     #[test]
     fn test_druid_sql_format() {
@@ -165,7 +164,7 @@ mod druid_tests {
 
 #[cfg(test)]
 mod integration_tests {
-    use super::*;
+    
     
     #[test]
     fn test_tsdb_core_sample() {

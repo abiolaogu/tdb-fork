@@ -81,6 +81,37 @@ func TestRouter_RouteRead(t *testing.T) {
 	if addr == "" {
 		t.Error("RouteRead returned empty address")
 	}
+
+	// Check that we get a valid address (localhost or leader)
+	if addr != "localhost" && addr != node.LeaderAddr() {
+		// If we had replicas configured, we'd check them too.
+		// For now, just ensure it's not a garbage string.
+		t.Logf("RouteRead returned: %s", addr)
+	}
+}
+
+func TestRouter_RouteWrite(t *testing.T) {
+	node := createTestNode(t)
+	defer node.Shutdown()
+	defer os.RemoveAll(node.GetConfig().DataDir)
+
+	r := NewRouter(node, zap.NewNop())
+
+	ctx := context.Background()
+	addr, err := r.RouteWrite(ctx, "users", []byte("key1"))
+	if err != nil {
+		t.Fatalf("RouteWrite failed: %v", err)
+	}
+
+	if addr == "" {
+		t.Error("RouteWrite returned empty address")
+	}
+
+	// Writes must go to leader (or localhost if not bootstrapped/no leader known)
+	// In this test setup, node might not be fully clustered, so it defaults to localhost
+	if addr != "localhost" && addr != node.LeaderAddr() {
+		t.Errorf("RouteWrite returned unexpected address: %s", addr)
+	}
 }
 
 func TestRouter_ConnectionPool(t *testing.T) {

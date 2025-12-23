@@ -1,0 +1,26 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+query = { SOI ~ statement ~ EOI }
+
+statement = { select_stmt | insert_stmt }
+
+select_stmt = { "SELECT" ~ projection ~ "FROM" ~ table ~ (where_clause)? }
+
+projection = { "*" | field_list }
+field_list = { field ~ ("," ~ field)* }
+field = { identifier }
+
+table = { identifier }
+
+where_clause = { "WHERE" ~ condition }
+condition = { field ~ op ~ value }
+
+op = { "=" | "!=" | ">" | "<" | ">=" | "<=" }
+value = { number | string }
+
+insert_stmt = { "INSERT" ~ "INTO" ~ table ~ "VALUES" ~ "(" ~ value_list ~ ")" }
+value_list = { value ~ ("," ~ value)* }
+
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+number = @{ ASCII_DIGIT+ }
+string = @{ "'" ~ (!"'" ~ ANY)* ~ "'" }

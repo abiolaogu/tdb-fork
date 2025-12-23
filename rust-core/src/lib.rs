@@ -89,9 +89,17 @@ pub mod dialects;    // Universal multi-query language support (InfluxQL, Flux, 
 // pub mod scripting;     // Stored Procedures & Triggers (Disabled for offline build)
 // pub mod node_bindings; // Node.js bindings using napi-rs (Disabled for offline build)
 // pub mod scripting;     // Stored Procedures & Triggers (Disabled for offline build)
-pub mod server;        // Multi-protocol Server Adapters
+// Multi-protocol Server Adapters
+pub mod server;        
 pub mod observability; // OpenTelemetry-compatible observability
 pub mod net;           // High-performance networking (DPDK/RDMA stubs)
+pub mod meilisearch;   // Meilisearch-Compatible Engine
+pub mod kafka;         // Kafka-Compatible Engine
+// pub mod raft;          // NEW: Multi-Raft Consensus (Disabled due to protoc issue)
+pub mod txn;           // NEW: Distributed Transaction Coordinator
+pub mod cluster;       // NEW: Placement Driver & Cluster Management
+pub mod query;         // NEW: Unified Query Language (LQL)
+pub mod graphql;       // NEW: GraphQL Schema Generator
 
 // Re-exports - Core
 pub use storage::{StorageEngine, Collection};

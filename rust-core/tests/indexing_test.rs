@@ -1,6 +1,5 @@
 use luma_core::{Database, Config, Document, Query};
 use std::collections::HashMap;
-use std::sync::Arc;
 use tokio::runtime::Runtime;
 
 #[test]

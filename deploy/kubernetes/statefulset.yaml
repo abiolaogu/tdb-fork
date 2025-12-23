@@ -1,0 +1,127 @@
+# deploy/kubernetes/statefulset.yaml
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: lumadb
+  labels:
+    app.kubernetes.io/name: lumadb
+    app.kubernetes.io/component: database
+spec:
+  serviceName: lumadb-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: lumadb
+  template:
+    metadata:
+      labels:
+        app: lumadb
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: lumadb
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: lumadb
+              topologyKey: kubernetes.io/hostname
+      
+      containers:
+        - name: lumadb
+          image: ghcr.io/abiolaogu/lumadb:latest
+          imagePullPolicy: IfNotPresent
+          
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE"]
+            readOnlyRootFilesystem: true
+          
+          ports:
+            - name: rest
+              containerPort: 8080
+            - name: kafka
+              containerPort: 9092
+            - name: graphql
+              containerPort: 4000
+            - name: raft
+              containerPort: 9100
+          
+          env:
+            - name: LUMADB_NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: LUMADB_CLUSTER_PEERS
+              value: "lumadb-0.lumadb-headless:9100,lumadb-1.lumadb-headless:9100,lumadb-2.lumadb-headless:9100"
+          
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "8"
+              memory: "16Gi"
+          
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /etc/lumadb
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: rest
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: rest
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          
+          startupProbe:
+            httpGet:
+              path: /health/startup
+              port: rest
+            failureThreshold: 30
+            periodSeconds: 10
+      
+      volumes:
+        - name: config
+          configMap:
+            name: lumadb-config
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 100Mi
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi

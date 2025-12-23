@@ -10,6 +10,21 @@ import (
 	"time"
 )
 
+var (
+	reCreateDB       = regexp.MustCompile(`(?i)CREATE\s+DATABASE\s+(IF\s+NOT\s+EXISTS\s+)?(\w+)`)
+	reDropDB         = regexp.MustCompile(`(?i)DROP\s+DATABASE\s+(IF\s+EXISTS\s+)?(\w+)`)
+	reUseDB          = regexp.MustCompile(`(?i)USE\s+(\w+)`)
+	rePrecision      = regexp.MustCompile(`(?i)PRECISION\s+'(\w+)'`)
+	reCreateStable   = regexp.MustCompile(`(?i)CREATE\s+(?:STABLE|TABLE)\s+(IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s*\((.*?)\)\s*TAGS\s*\((.*?)\)`)
+	reCreateTable    = regexp.MustCompile(`(?i)CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s*\((.*?)\)`)
+	reCreateSubTable = regexp.MustCompile(`(?i)CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s+USING\s+(?:(\w+)\.)?(\w+)\s+TAGS\s*\((.*?)\)`)
+	reDropTable      = regexp.MustCompile(`(?i)DROP\s+TABLE\s+(IF\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)`)
+	reShowTables     = regexp.MustCompile(`(?i)SHOW\s+TABLES\s*(FROM\s+(\w+))?`)
+	reDescribe       = regexp.MustCompile(`(?i)DESCRIBE\s+(?:(\w+)\.)?(\w+)`)
+	reCreateStream   = regexp.MustCompile(`(?i)CREATE\s+STREAM\s+(IF\s+NOT\s+EXISTS\s+)?(\w+)\s+(?:TRIGGER\s+(\w+)\s+)?(?:WATERMARK\s+(\w+)\s+)?INTO\s+(\w+)\s+AS\s+(.+)`)
+	reDropStream     = regexp.MustCompile(`(?i)DROP\s+STREAM\s+(IF\s+EXISTS\s+)?(\w+)`)
+)
+
 // Engine is the TDengine SQL execution engine
 type Engine struct {
 	databases map[string]*Database
@@ -235,8 +250,7 @@ func (e *Engine) createDatabase(sql string) (*Response, error) {
 	defer e.mu.Unlock()
 
 	// Parse: CREATE DATABASE [IF NOT EXISTS] <name> [options...]
-	re := regexp.MustCompile(`(?i)CREATE\s+DATABASE\s+(IF\s+NOT\s+EXISTS\s+)?(\w+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reCreateDB.FindStringSubmatch(sql)
 	if len(matches) < 3 {
 		return nil, fmt.Errorf("invalid CREATE DATABASE syntax")
 	}
@@ -254,8 +268,7 @@ func (e *Engine) createDatabase(sql string) (*Response, error) {
 	// Parse options
 	precision := "ms"
 	if strings.Contains(strings.ToUpper(sql), "PRECISION") {
-		precRe := regexp.MustCompile(`(?i)PRECISION\s+'(\w+)'`)
-		if m := precRe.FindStringSubmatch(sql); len(m) > 1 {
+		if m := rePrecision.FindStringSubmatch(sql); len(m) > 1 {
 			precision = m[1]
 		}
 	}
@@ -275,8 +288,7 @@ func (e *Engine) dropDatabase(sql string) (*Response, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	re := regexp.MustCompile(`(?i)DROP\s+DATABASE\s+(IF\s+EXISTS\s+)?(\w+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reDropDB.FindStringSubmatch(sql)
 	if len(matches) < 3 {
 		return nil, fmt.Errorf("invalid DROP DATABASE syntax")
 	}
@@ -296,8 +308,7 @@ func (e *Engine) dropDatabase(sql string) (*Response, error) {
 }
 
 func (e *Engine) useDatabase(sql string) (*Response, error) {
-	re := regexp.MustCompile(`(?i)USE\s+(\w+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reUseDB.FindStringSubmatch(sql)
 	if len(matches) < 2 {
 		return nil, fmt.Errorf("invalid USE syntax")
 	}
@@ -354,8 +365,8 @@ func (e *Engine) createSuperTable(db, sql string) (*Response, error) {
 
 	// Parse CREATE STABLE syntax
 	// CREATE STABLE [IF NOT EXISTS] [db.]name (columns) TAGS (tags)
-	re := regexp.MustCompile(`(?i)CREATE\s+(?:STABLE|TABLE)\s+(IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s*\((.*?)\)\s*TAGS\s*\((.*?)\)`)
-	matches := re.FindStringSubmatch(sql)
+	// Create SuperTable - reCreateStable
+	matches := reCreateStable.FindStringSubmatch(sql)
 	if len(matches) < 6 {
 		return nil, fmt.Errorf("invalid CREATE STABLE syntax")
 	}
@@ -406,8 +417,7 @@ func (e *Engine) createTable(db, sql string) (*Response, error) {
 
 	// Check if it's a subtable creation: CREATE TABLE name USING stable TAGS (values)
 	if strings.Contains(upperSQL, "USING") {
-		re := regexp.MustCompile(`(?i)CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s+USING\s+(?:(\w+)\.)?(\w+)\s+TAGS\s*\((.*?)\)`)
-		matches := re.FindStringSubmatch(sql)
+		matches := reCreateSubTable.FindStringSubmatch(sql)
 		if len(matches) < 7 {
 			return nil, fmt.Errorf("invalid CREATE TABLE ... USING syntax")
 		}
@@ -456,8 +466,7 @@ func (e *Engine) createTable(db, sql string) (*Response, error) {
 	}
 
 	// Regular table (not subtable)
-	re := regexp.MustCompile(`(?i)CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s*\((.*?)\)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reCreateTable.FindStringSubmatch(sql)
 	if len(matches) < 5 {
 		return nil, fmt.Errorf("invalid CREATE TABLE syntax")
 	}
@@ -497,8 +506,7 @@ func (e *Engine) dropTable(db, sql string) (*Response, error) {
 		return nil, fmt.Errorf("database not found: %s", db)
 	}
 
-	re := regexp.MustCompile(`(?i)DROP\s+TABLE\s+(IF\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reDropTable.FindStringSubmatch(sql)
 	if len(matches) < 4 {
 		return nil, fmt.Errorf("invalid DROP TABLE syntax")
 	}
@@ -536,8 +544,7 @@ func (e *Engine) showTables(db, sql string) (*Response, error) {
 	defer e.mu.RUnlock()
 
 	// Parse optional FROM clause
-	re := regexp.MustCompile(`(?i)SHOW\s+TABLES\s*(FROM\s+(\w+))?`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reShowTables.FindStringSubmatch(sql)
 	if len(matches) > 2 && matches[2] != "" {
 		db = matches[2]
 	}
@@ -622,8 +629,7 @@ func (e *Engine) describeTable(db, sql string) (*Response, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	re := regexp.MustCompile(`(?i)DESCRIBE\s+(?:(\w+)\.)?(\w+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reDescribe.FindStringSubmatch(sql)
 	if len(matches) < 3 {
 		return nil, fmt.Errorf("invalid DESCRIBE syntax")
 	}
@@ -732,8 +738,7 @@ func (e *Engine) createStream(db, sql string) (*Response, error) {
 	defer e.mu.Unlock()
 
 	// Parse CREATE STREAM syntax
-	re := regexp.MustCompile(`(?i)CREATE\s+STREAM\s+(IF\s+NOT\s+EXISTS\s+)?(\w+)\s+(?:TRIGGER\s+(\w+)\s+)?(?:WATERMARK\s+(\w+)\s+)?INTO\s+(\w+)\s+AS\s+(.+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reCreateStream.FindStringSubmatch(sql)
 	if len(matches) < 7 {
 		return nil, fmt.Errorf("invalid CREATE STREAM syntax")
 	}
@@ -763,8 +768,7 @@ func (e *Engine) dropStream(sql string) (*Response, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	re := regexp.MustCompile(`(?i)DROP\s+STREAM\s+(IF\s+EXISTS\s+)?(\w+)`)
-	matches := re.FindStringSubmatch(sql)
+	matches := reDropStream.FindStringSubmatch(sql)
 	if len(matches) < 3 {
 		return nil, fmt.Errorf("invalid DROP STREAM syntax")
 	}

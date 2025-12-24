@@ -263,14 +263,25 @@ impl QueryEngine {
         collection: &str,
         vector: &[f32],
         k: usize,
-        filter: Option<&str>,
+        _filter: Option<&str>,
     ) -> Result<Vec<VectorSearchResult>> {
         let index = self.storage.get_or_create_vector_index(collection, vector.len());
-        let results = index.search(vector, k, k * 2);
+        let results = index.search(vector, k);
+
+        // Convert (id, score) tuples to VectorSearchResult
+        let search_results = results
+            .into_iter()
+            .map(|(id, score)| VectorSearchResult {
+                id,
+                score,
+                document: None,
+                vector: None,
+            })
+            .collect();
 
         // TODO: Apply filter expression if specified
 
-        Ok(results)
+        Ok(search_results)
     }
 
     // ========================================================================

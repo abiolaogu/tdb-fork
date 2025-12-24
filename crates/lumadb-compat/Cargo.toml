@@ -1,0 +1,41 @@
+[package]
+name = "lumadb-compat"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Vector database compatibility layer - Qdrant, Pinecone, MongoDB Atlas drop-in replacement"
+
+[dependencies]
+lumadb-common = { workspace = true }
+lumadb-storage = { workspace = true }
+lumadb-query = { workspace = true }
+lumadb-security = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Web framework
+actix-web = { workspace = true }
+actix-cors = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+bson = { workspace = true }
+
+# HTTP client for migration tools
+reqwest = { workspace = true }
+
+# Utils
+uuid = { workspace = true }
+chrono = { workspace = true }
+base64 = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

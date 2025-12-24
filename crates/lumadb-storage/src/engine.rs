@@ -9,15 +9,28 @@ use parking_lot::RwLock;
 use sled::Db;
 use tracing::{info, warn};
 
+use serde::{Deserialize, Serialize};
+
 use lumadb_common::config::StorageConfig;
 use lumadb_common::error::{Result, StorageError};
-use lumadb_common::types::{CollectionMetadata, Document};
+use lumadb_common::types::{CollectionInfo, CollectionMetadata, Document};
 
 use crate::cache::BufferPool;
 use crate::fulltext::FullTextIndex;
 use crate::lsm::LsmTree;
 use crate::vector::VectorIndex;
 use crate::wal::WriteAheadLog;
+
+/// Vector search result from storage engine
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VectorSearchResult {
+    /// Document ID
+    pub doc_id: String,
+    /// Similarity score
+    pub score: f32,
+    /// Document payload
+    pub payload: serde_json::Value,
+}
 
 /// Main storage engine orchestrating all storage components
 pub struct StorageEngine {
@@ -307,6 +320,94 @@ impl StorageEngine {
         }
 
         Ok(docs)
+    }
+
+    // ========================================================================
+    // Vector Operations (for compatibility layer)
+    // ========================================================================
+
+    /// Get collection info with vector dimensions
+    pub async fn get_collection_info(&self, name: &str) -> Result<Option<CollectionInfo>> {
+        match self.get_collection(name).await? {
+            Some(metadata) => {
+                // Get vector index dimensions if exists
+                let vector_dimensions = self.vector_indexes.get(name).map(|idx| idx.dimensions());
+                Ok(Some(CollectionInfo {
+                    name: metadata.name,
+                    count: metadata.count,
+                    size_bytes: metadata.size_bytes,
+                    vector_dimensions,
+                }))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Create a vector-enabled collection
+    pub async fn create_vector_collection(&self, name: &str, dimensions: usize) -> Result<()> {
+        // Create regular collection
+        let _ = self.create_collection(name).await;
+        // Initialize vector index
+        self.get_or_create_vector_index(name, dimensions);
+        Ok(())
+    }
+
+    /// Insert a document with vector embedding
+    pub async fn insert_vector_document(
+        &self,
+        collection: &str,
+        doc: &Document,
+        vector: &[f32],
+    ) -> Result<()> {
+        // Insert document
+        self.insert_document(collection, doc).await?;
+
+        // Index vector
+        if let Some(index) = self.vector_indexes.get(collection) {
+            index.insert(doc.id.clone(), vector.to_vec()).map_err(|e| {
+                lumadb_common::error::Error::Storage(StorageError::WriteFailed(e))
+            })?;
+        }
+        Ok(())
+    }
+
+    /// Vector similarity search
+    pub async fn vector_search(
+        &self,
+        collection: &str,
+        query: &[f32],
+        k: usize,
+    ) -> Result<Vec<VectorSearchResult>> {
+        let index = self.vector_indexes.get(collection).ok_or_else(|| {
+            lumadb_common::error::Error::Storage(StorageError::ReadFailed(format!(
+                "No vector index for collection: {}",
+                collection
+            )))
+        })?;
+
+        let results = index.search(query, k);
+        let mut search_results = Vec::with_capacity(results.len());
+
+        for (doc_id, score) in results {
+            let payload = self.get_document(collection, &doc_id).await?
+                .map(|d| d.data)
+                .unwrap_or_default();
+            search_results.push(VectorSearchResult {
+                doc_id,
+                score,
+                payload,
+            });
+        }
+
+        Ok(search_results)
+    }
+
+    /// Count documents in a collection
+    pub async fn count_documents(&self, collection: &str) -> Result<usize> {
+        match self.get_collection(collection).await? {
+            Some(metadata) => Ok(metadata.count),
+            None => Ok(0),
+        }
     }
 
     // ========================================================================

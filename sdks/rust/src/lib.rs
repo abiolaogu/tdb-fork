@@ -5,11 +5,23 @@
 //! - SQL and LQL queries
 //! - Vector similarity search
 //! - Document operations
+//!
+//! ## Compatibility Layers
+//!
+//! The SDK provides compatibility wrappers for easy migration from other vector databases:
+//!
+//! - [`compat::qdrant::QdrantClient`] - Qdrant-compatible interface
+//! - [`compat::pinecone::PineconeClient`] - Pinecone-compatible interface
+//!
+//! See the [`compat`] module for examples.
 
 #![warn(clippy::all, clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::must_use_candidate)]
+
+pub mod compat;
 
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

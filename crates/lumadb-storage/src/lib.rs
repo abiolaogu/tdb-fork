@@ -20,7 +20,7 @@ pub mod vector;
 mod engine;
 mod wal;
 
-pub use engine::StorageEngine;
+pub use engine::{StorageEngine, VectorSearchResult};
 pub use wal::WriteAheadLog;
 
 use lumadb_common::config::StorageConfig;

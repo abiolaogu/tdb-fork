@@ -305,14 +305,14 @@ impl Executor {
         k: usize,
     ) -> Result<QueryResult> {
         let index = self.storage.get_or_create_vector_index(collection, vector.len());
-        let results = index.search(vector, k, k * 2);
+        let results = index.search(vector, k);
 
         let rows: Vec<HashMap<String, serde_json::Value>> = results
             .into_iter()
-            .map(|r| {
+            .map(|(id, score)| {
                 let mut row = HashMap::new();
-                row.insert("id".to_string(), serde_json::Value::String(r.id));
-                row.insert("score".to_string(), serde_json::json!(r.score));
+                row.insert("id".to_string(), serde_json::Value::String(id));
+                row.insert("score".to_string(), serde_json::json!(score));
                 row
             })
             .collect();

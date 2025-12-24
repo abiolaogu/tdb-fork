@@ -7,7 +7,7 @@ use dashmap::DashMap;
 use parking_lot::RwLock;
 use rand::Rng;
 
-use lumadb_common::types::{DistanceMetric, VectorSearchResult};
+use lumadb_common::types::DistanceMetric;
 
 /// HNSW-based vector index
 pub struct VectorIndex {
@@ -151,8 +151,13 @@ impl VectorIndex {
         Ok(())
     }
 
-    /// Search for nearest neighbors
-    pub fn search(&self, query: &[f32], k: usize, ef: usize) -> Vec<VectorSearchResult> {
+    /// Search for nearest neighbors (returns id, score pairs)
+    pub fn search(&self, query: &[f32], k: usize) -> Vec<(String, f32)> {
+        self.search_with_ef(query, k, k * 2)
+    }
+
+    /// Search for nearest neighbors with custom ef
+    pub fn search_with_ef(&self, query: &[f32], k: usize, ef: usize) -> Vec<(String, f32)> {
         if query.len() != self.dimensions {
             return vec![];
         }
@@ -184,25 +189,22 @@ impl VectorIndex {
         // Search layer 0 with ef
         let candidates = self.search_layer(&current_nearest, &query, ef.max(k), 0);
 
-        // Return top k results
+        // Return top k results as (id, score) pairs
         candidates
             .into_iter()
             .take(k)
             .map(|id| {
-                let vector = self.vectors.get(&id).map(|v| v.clone());
-                let score = vector
-                    .as_ref()
-                    .map(|v| self.distance(&query, v))
+                let score = self.vectors.get(&id)
+                    .map(|v| self.distance(&query, &v))
                     .unwrap_or(f32::MAX);
-
-                VectorSearchResult {
-                    id,
-                    score,
-                    document: None,
-                    vector,
-                }
+                (id, score)
             })
             .collect()
+    }
+
+    /// Get dimensions of this index
+    pub fn dimensions(&self) -> usize {
+        self.dimensions
     }
 
     /// Search within a layer

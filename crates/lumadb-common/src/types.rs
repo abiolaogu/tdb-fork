@@ -191,13 +191,26 @@ pub struct CollectionMetadata {
     /// Collection name
     pub name: String,
     /// Document count
-    pub count: u64,
+    pub count: usize,
     /// Size in bytes
     pub size_bytes: u64,
     /// Indexes
     pub indexes: Vec<IndexMetadata>,
     /// Schema (optional)
     pub schema: Option<serde_json::Value>,
+}
+
+/// Collection info with vector dimensions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionInfo {
+    /// Collection name
+    pub name: String,
+    /// Document count
+    pub count: usize,
+    /// Size in bytes
+    pub size_bytes: u64,
+    /// Vector dimensions (if vector index exists)
+    pub vector_dimensions: Option<usize>,
 }
 
 /// Index metadata

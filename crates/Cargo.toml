@@ -15,10 +15,11 @@ members = [
     "lumadb-security",
     "lumadb-common",
     "lumadb-admin",
+    "tests",
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.0-beta.1"
 edition = "2021"
 rust-version = "1.77"
 license = "Apache-2.0"

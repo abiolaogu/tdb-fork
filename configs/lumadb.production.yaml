@@ -152,22 +152,22 @@ raft:
 # Security Configuration
 # ===========================================================================
 security:
-  # TLS
-  tls:
-    enabled: ${LUMADB_TLS_ENABLED:-false}
-    cert_file: ${LUMADB_TLS_CERT:-}
-    key_file: ${LUMADB_TLS_KEY:-}
-    ca_file: ${LUMADB_TLS_CA:-}
-    
   # Authentication
-  auth:
-    enabled: ${LUMADB_AUTH_ENABLED:-false}
-    default_user: admin
-    
-  # Authorization
-  authz:
-    enabled: ${LUMADB_AUTHZ_ENABLED:-false}
-    default_policy: allow
+  auth_enabled: ${LUMADB_AUTH_ENABLED:-false}
+  auth_method: ${LUMADB_AUTH_METHOD:-jwt}
+
+  # JWT Configuration
+  # CRITICAL: Set LUMADB_JWT_SECRET in production!
+  jwt_secret: ${LUMADB_JWT_SECRET:-}
+  jwt_expiration_secs: ${LUMADB_JWT_EXPIRATION:-86400}
+
+  # TLS
+  tls_enabled: ${LUMADB_TLS_ENABLED:-false}
+  tls_cert_path: ${LUMADB_TLS_CERT:-}
+  tls_key_path: ${LUMADB_TLS_KEY:-}
+
+  # Audit logging
+  audit_enabled: ${LUMADB_AUDIT_ENABLED:-false}
 
 # ===========================================================================
 # Logging Configuration

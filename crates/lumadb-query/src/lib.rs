@@ -41,9 +41,11 @@ pub struct QueryResult {
     /// Number of rows affected
     rows_affected: u64,
     /// Whether result was from cache
-    cached: bool,
+    pub cached: bool,
     /// Column names
     columns: Vec<String>,
+    /// Execution time in milliseconds
+    pub execution_time_ms: u64,
 }
 
 impl QueryResult {
@@ -60,12 +62,18 @@ impl QueryResult {
             rows,
             cached: false,
             columns,
+            execution_time_ms: 0,
         }
     }
 
     /// Get rows
     pub fn rows(&self) -> &[std::collections::HashMap<String, serde_json::Value>] {
         &self.rows
+    }
+
+    /// Get columns
+    pub fn columns(&self) -> &[String] {
+        &self.columns
     }
 
     /// Get rows affected

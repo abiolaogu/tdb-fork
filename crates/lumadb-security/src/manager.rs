@@ -37,7 +37,14 @@ impl SecurityManager {
 
         let authenticator: Box<dyn Authenticator> = if config.auth_enabled {
             match config.auth_method.as_str() {
-                "jwt" => Box::new(JwtAuth::new("secret")),
+                "jwt" => {
+                    if config.jwt_secret.starts_with("dev-secret-") {
+                        tracing::warn!(
+                            "Using auto-generated JWT secret. Set LUMADB_JWT_SECRET environment variable for production!"
+                        );
+                    }
+                    Box::new(JwtAuth::new(&config.jwt_secret))
+                },
                 "sasl" => Box::new(SaslAuth::new()),
                 _ => Box::new(NoAuth),
             }

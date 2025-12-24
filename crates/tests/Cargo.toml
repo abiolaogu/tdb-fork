@@ -1,0 +1,31 @@
+[package]
+name = "lumadb-integration-tests"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+description = "Integration tests for LumaDB"
+
+[[test]]
+name = "integration"
+path = "integration_tests.rs"
+
+[dependencies]
+# All LumaDB crates
+lumadb-common = { path = "../lumadb-common" }
+lumadb-storage = { path = "../lumadb-storage" }
+lumadb-streaming = { path = "../lumadb-streaming" }
+lumadb-query = { path = "../lumadb-query" }
+lumadb-security = { path = "../lumadb-security" }
+lumadb-protocol = { path = "../lumadb-protocol" }
+lumadb-api = { path = "../lumadb-api" }
+lumadb-raft = { path = "../lumadb-raft" }
+lumadb-txn = { path = "../lumadb-txn" }
+lumadb-cluster = { path = "../lumadb-cluster" }
+
+# Testing dependencies
+tokio = { workspace = true, features = ["full", "test-util"] }
+tempfile = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }

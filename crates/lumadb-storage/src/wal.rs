@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use parking_lot::Mutex;
+use tokio::sync::Mutex;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncWriteExt, BufWriter};
 use tracing::{debug, info};
@@ -14,7 +14,7 @@ use lumadb_common::error::{Result, StorageError};
 pub struct WriteAheadLog {
     /// Path to WAL directory
     path: PathBuf,
-    /// Current WAL file
+    /// Current WAL file (async-safe mutex for holding across .await)
     writer: Mutex<Option<BufWriter<File>>>,
     /// Current segment number
     segment: AtomicU64,
@@ -81,7 +81,7 @@ impl WriteAheadLog {
             .await?;
 
         let writer = BufWriter::new(file);
-        *self.writer.lock() = Some(writer);
+        *self.writer.lock().await = Some(writer);
         self.offset.store(0, Ordering::SeqCst);
 
         Ok(())
@@ -97,7 +97,7 @@ impl WriteAheadLog {
             self.rotate().await?;
         }
 
-        let mut writer_guard = self.writer.lock();
+        let mut writer_guard = self.writer.lock().await;
         let _writer = writer_guard.as_mut().ok_or_else(|| {
             lumadb_common::error::Error::Storage(StorageError::WalError(
                 "WAL not initialized".to_string(),
@@ -127,7 +127,7 @@ impl WriteAheadLog {
 
     /// Sync the WAL to disk
     pub async fn sync(&self) -> Result<()> {
-        let mut writer_guard = self.writer.lock();
+        let mut writer_guard = self.writer.lock().await;
         if let Some(ref mut writer) = *writer_guard {
             writer.flush().await?;
             writer.get_ref().sync_all().await?;

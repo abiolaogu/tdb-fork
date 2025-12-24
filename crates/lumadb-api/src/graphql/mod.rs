@@ -2,13 +2,14 @@
 
 use std::sync::Arc;
 
-use async_graphql::{Context, EmptySubscription, Object, Schema, SimpleObject};
+use async_graphql::{Context, EmptySubscription, Object, Schema, SimpleObject, InputObject};
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use actix_web::{web, HttpResponse};
 use tracing::info;
 
 use lumadb_common::config::GraphQLApiConfig;
 use lumadb_common::error::Result;
+use lumadb_common::types::TopicConfig;
 use lumadb_query::QueryEngine;
 use lumadb_streaming::StreamingEngine;
 use lumadb_security::SecurityManager;
@@ -77,25 +78,76 @@ impl QueryRoot {
     }
 
     /// List all collections
-    async fn collections(&self, _ctx: &Context<'_>) -> async_graphql::Result<Vec<Collection>> {
-        // TODO: Re-enable when thread-safety is resolved
-        Ok(vec![])
+    async fn collections(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Collection>> {
+        let query_engine = ctx.data::<Arc<QueryEngine>>()?;
+        let collections = query_engine
+            .list_collections()
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(collections
+            .into_iter()
+            .map(|c| Collection {
+                name: c.name,
+                count: c.count as i64,
+                size_bytes: c.size_bytes as i64,
+            })
+            .collect())
     }
 
     /// List all topics
-    async fn topics(&self, _ctx: &Context<'_>) -> async_graphql::Result<Vec<Topic>> {
-        // TODO: Re-enable when thread-safety is resolved
-        Ok(vec![])
+    async fn topics(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Topic>> {
+        let streaming = ctx.data::<Arc<StreamingEngine>>()?;
+        let topics = streaming
+            .list_topics()
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(topics
+            .into_iter()
+            .map(|t| Topic {
+                name: t.name,
+                partitions: t.partitions.len() as i32,
+                is_internal: t.is_internal,
+            })
+            .collect())
     }
 
-    /// Execute a query
+    /// Execute a SQL query
     async fn query(
         &self,
-        _ctx: &Context<'_>,
-        _query: String,
+        ctx: &Context<'_>,
+        query: String,
     ) -> async_graphql::Result<serde_json::Value> {
-        // TODO: Re-enable when thread-safety is resolved
-        Ok(serde_json::json!({"status": "not implemented"}))
+        let query_engine = ctx.data::<Arc<QueryEngine>>()?;
+        let result = query_engine
+            .execute(&query, &[])
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(serde_json::json!({
+            "rows": result.rows(),
+            "columns": result.columns(),
+            "execution_time_ms": result.execution_time_ms,
+            "cached": result.cached
+        }))
+    }
+
+    /// Find documents in a collection
+    async fn find(
+        &self,
+        ctx: &Context<'_>,
+        collection: String,
+        filter: Option<serde_json::Value>,
+        limit: Option<i32>,
+    ) -> async_graphql::Result<Vec<serde_json::Value>> {
+        let query_engine = ctx.data::<Arc<QueryEngine>>()?;
+        let docs = query_engine
+            .find(&collection, filter.as_ref(), limit.map(|l| l as usize))
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(docs)
     }
 }
 
@@ -107,29 +159,85 @@ impl MutationRoot {
     /// Create a collection
     async fn create_collection(
         &self,
-        _ctx: &Context<'_>,
+        ctx: &Context<'_>,
         name: String,
     ) -> async_graphql::Result<Collection> {
-        // TODO: Re-enable when thread-safety is resolved
+        let query_engine = ctx.data::<Arc<QueryEngine>>()?;
+        let meta = query_engine
+            .create_collection(&name, None, None)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
         Ok(Collection {
-            name,
-            count: 0,
-            size_bytes: 0,
+            name: meta.name,
+            count: meta.count as i64,
+            size_bytes: meta.size_bytes as i64,
         })
     }
 
     /// Create a topic
     async fn create_topic(
         &self,
-        _ctx: &Context<'_>,
+        ctx: &Context<'_>,
         name: String,
         partitions: Option<i32>,
     ) -> async_graphql::Result<Topic> {
-        // TODO: Re-enable when thread-safety is resolved
+        let streaming = ctx.data::<Arc<StreamingEngine>>()?;
+
+        let mut config = TopicConfig::new(
+            name.clone(),
+            partitions.unwrap_or(3) as u32,
+            1, // replication_factor
+        );
+        config.retention_ms = Some(7 * 24 * 60 * 60 * 1000); // 7 days
+        config.segment_bytes = Some(1024 * 1024 * 1024);      // 1 GB
+
+        streaming
+            .create_topic(config)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
         Ok(Topic {
             name,
             partitions: partitions.unwrap_or(3),
             is_internal: false,
+        })
+    }
+
+    /// Insert documents into a collection
+    async fn insert(
+        &self,
+        ctx: &Context<'_>,
+        collection: String,
+        documents: Vec<serde_json::Value>,
+    ) -> async_graphql::Result<InsertResult> {
+        let query_engine = ctx.data::<Arc<QueryEngine>>()?;
+        let result = query_engine
+            .insert(&collection, &documents)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(InsertResult {
+            inserted_count: result.inserted_count as i64,
+            ids: result.ids,
+        })
+    }
+
+    /// Delete documents from a collection
+    async fn delete(
+        &self,
+        ctx: &Context<'_>,
+        collection: String,
+        filter: serde_json::Value,
+    ) -> async_graphql::Result<DeleteResult> {
+        let query_engine = ctx.data::<Arc<QueryEngine>>()?;
+        let result = query_engine
+            .delete(&collection, &filter)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(DeleteResult {
+            deleted_count: result.deleted_count as i64,
         })
     }
 }
@@ -156,4 +264,15 @@ struct Topic {
     name: String,
     partitions: i32,
     is_internal: bool,
+}
+
+#[derive(SimpleObject)]
+struct InsertResult {
+    inserted_count: i64,
+    ids: Vec<String>,
+}
+
+#[derive(SimpleObject)]
+struct DeleteResult {
+    deleted_count: i64,
 }

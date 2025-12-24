@@ -2483,7 +2483,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -2509,7 +2509,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-admin"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "lumadb-common",
@@ -2520,7 +2520,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-api"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "actix-cors",
  "actix-rt",
@@ -2547,7 +2547,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-cluster"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2565,7 +2565,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-common"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2588,8 +2588,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "lumadb-integration-tests"
+version = "0.1.0-beta.1"
+dependencies = [
+ "chrono",
+ "lumadb-api",
+ "lumadb-cluster",
+ "lumadb-common",
+ "lumadb-protocol",
+ "lumadb-query",
+ "lumadb-raft",
+ "lumadb-security",
+ "lumadb-storage",
+ "lumadb-streaming",
+ "lumadb-txn",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
 name = "lumadb-protocol"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2611,7 +2631,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-query"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "arrow",
@@ -2636,7 +2656,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-raft"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2657,7 +2677,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-security"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2684,7 +2704,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-storage"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "arrow",
@@ -2721,7 +2741,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-streaming"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2756,7 +2776,7 @@ dependencies = [
 
 [[package]]
 name = "lumadb-txn"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 dependencies = [
  "anyhow",
  "async-trait",

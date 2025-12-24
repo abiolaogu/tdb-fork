@@ -369,6 +369,12 @@ pub struct SecurityConfig {
     pub auth_enabled: bool,
     /// Authentication method
     pub auth_method: String,
+    /// JWT secret key (required when auth_method is "jwt")
+    #[serde(default = "default_jwt_secret")]
+    pub jwt_secret: String,
+    /// JWT token expiration in seconds
+    #[serde(default = "default_jwt_expiration")]
+    pub jwt_expiration_secs: u64,
     /// Enable TLS
     pub tls_enabled: bool,
     /// TLS certificate path
@@ -379,11 +385,32 @@ pub struct SecurityConfig {
     pub audit_enabled: bool,
 }
 
+fn default_jwt_secret() -> String {
+    std::env::var("LUMADB_JWT_SECRET").unwrap_or_else(|_| {
+        // Generate a random secret if not provided (development only)
+        use std::collections::hash_map::RandomState;
+        use std::hash::{BuildHasher, Hasher};
+        let s = RandomState::new();
+        let mut hasher = s.build_hasher();
+        hasher.write_u64(std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64);
+        format!("dev-secret-{:x}", hasher.finish())
+    })
+}
+
+fn default_jwt_expiration() -> u64 {
+    86400 // 24 hours
+}
+
 impl Default for SecurityConfig {
     fn default() -> Self {
         Self {
             auth_enabled: false,
             auth_method: "none".to_string(),
+            jwt_secret: default_jwt_secret(),
+            jwt_expiration_secs: default_jwt_expiration(),
             tls_enabled: false,
             tls_cert_path: None,
             tls_key_path: None,

@@ -11,7 +11,7 @@
     Data directory (default: C:\ProgramData\LumaDB)
 .EXAMPLE
     .\install.ps1
-    .\install.ps1 -Version "0.1.0"
+    .\install.ps1 -Version "0.1.0-beta.1"
     .\install.ps1 -InstallPath "D:\LumaDB" -DataPath "D:\LumaDB\Data"
 #>
 

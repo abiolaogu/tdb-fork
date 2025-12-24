@@ -57,7 +57,7 @@ make build
 curl http://localhost:8080/health
 
 # Expected response:
-# {"status":"healthy","version":"0.1.0"}
+# {"status":"healthy","version":"0.1.0-beta.1"}
 ```
 
 ## Next Steps

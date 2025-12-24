@@ -1,7 +1,7 @@
 # LumaDB
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.1.0--beta.1-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License">
   <img src="https://img.shields.io/badge/rust-1.77+-orange.svg" alt="Rust">
   <img src="https://img.shields.io/github/actions/workflow/status/abiolaogu/LumaDB/ci.yml?label=CI" alt="CI">

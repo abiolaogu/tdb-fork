@@ -74,7 +74,7 @@ FROM debian:bookworm-slim AS production
 LABEL org.opencontainers.image.source="https://github.com/abiolaogu/LumaDB"
 LABEL org.opencontainers.image.description="LumaDB - Ultra-fast unified database (100x faster streaming)"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
-LABEL org.opencontainers.image.version="0.1.0"
+LABEL org.opencontainers.image.version="0.1.0-beta.1"
 
 # Security: Create non-root user
 RUN groupadd -r lumadb && useradd -r -g lumadb lumadb

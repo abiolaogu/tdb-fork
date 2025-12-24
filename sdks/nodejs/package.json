@@ -1,0 +1,23 @@
+{
+    "name": "@lumadb/client",
+    "version": "0.1.0",
+    "main": "index.js",
+    "types": "index.d.ts",
+    "napi": {
+        "name": "lumadb-nodejs",
+        "triples": {
+            "defaults": true,
+            "additional": [
+                "x86_64-unknown-linux-musl",
+                "aarch64-unknown-linux-musl"
+            ]
+        }
+    },
+    "devDependencies": {
+        "@napi-rs/cli": "^2.18.0"
+    },
+    "scripts": {
+        "build": "napi build --platform --release",
+        "build:debug": "napi build --platform"
+    }
+}

@@ -63,3 +63,7 @@ criterion = { workspace = true }
 [features]
 default = []
 io_uring = []
+
+[[bench]]
+name = "streaming_bench"
+harness = false

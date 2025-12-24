@@ -19,3 +19,4 @@ pub mod reactor;
 mod engine;
 
 pub use engine::{StreamingEngine, ProduceRecord, ConsumeRecord, RaftStub};
+pub use lumadb_common::config::StreamingConfig;

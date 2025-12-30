@@ -1,0 +1,20 @@
+[package]
+name = "supabase-mfa"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "MFA and advanced auth for Supabase compatibility layer"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+parking_lot = "0.12"
+base64 = { workspace = true }
+rand = { workspace = true }
+supabase-common = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }

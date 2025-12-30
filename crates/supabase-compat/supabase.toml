@@ -1,0 +1,61 @@
+# LumaDB Supabase Compatibility Layer - Default Configuration
+
+[rest]
+host = "0.0.0.0"
+port = 3000
+schema = "public"
+max_rows = 1000
+openapi_enabled = true
+cors_origins = ["*"]
+
+[auth]
+host = "0.0.0.0"
+port = 9999
+# jwt_secret = "your-super-secret-key-here"  # Auto-generated if not set
+jwt_expiry = 3600
+refresh_token_expiry = 604800
+site_url = "http://localhost:3000"
+email_confirm_required = false
+phone_confirm_required = false
+
+[auth.password_requirements]
+min_length = 8
+require_uppercase = false
+require_lowercase = false
+require_numbers = false
+require_special = false
+
+[auth.oauth_providers]
+# Uncomment and fill in to enable OAuth providers
+# [auth.oauth_providers.google]
+# client_id = "your-google-client-id"
+# client_secret = "your-google-client-secret"
+# scopes = ["openid", "email", "profile"]
+
+# [auth.oauth_providers.github]
+# client_id = "your-github-client-id"
+# client_secret = "your-github-client-secret"
+# scopes = ["user:email"]
+
+[realtime]
+host = "0.0.0.0"
+port = 4000
+max_connections = 100000
+heartbeat_interval = 30
+message_buffer_size = 1000
+
+[storage]
+host = "0.0.0.0"
+port = 5000
+storage_path = "./storage"
+max_file_size = 52428800  # 50MB
+allowed_mime_types = []
+enable_image_transforms = true
+
+[database]
+host = "localhost"
+port = 5432
+database = "postgres"
+user = "postgres"
+password = "postgres"
+pool_size = 10

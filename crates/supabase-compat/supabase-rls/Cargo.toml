@@ -1,0 +1,39 @@
+[package]
+name = "supabase-rls"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Row Level Security engine for Supabase compatibility layer"
+
+[dependencies]
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# SQL parsing
+sqlparser = "0.43"
+
+# Time
+chrono = { workspace = true }
+
+# Error Handling
+thiserror = { workspace = true }
+
+# Observability
+tracing = { workspace = true }
+
+# Utils
+uuid = { workspace = true }
+parking_lot = "0.12"
+dashmap = "5.5"
+
+# Internal
+supabase-common = { workspace = true }
+supabase-auth = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }

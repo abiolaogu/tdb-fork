@@ -45,8 +45,9 @@
 - **GraphQL**: Full query and mutation support
 - **gRPC**: High-performance RPC
 - **Kafka Protocol**: Native wire protocol support
-- **PostgreSQL Protocol**: (Coming soon)
-- **MongoDB Protocol**: (Coming soon)
+- **DynamoDB Protocol**: Native AWS SDK compatibility
+- **Cloudflare D1**: Native Workers compatibility
+- **Turso/LibSQL**: Native LibSQL Client compatibility
 
 ### Distributed System
 - **Multi-Raft Consensus**: Strong consistency

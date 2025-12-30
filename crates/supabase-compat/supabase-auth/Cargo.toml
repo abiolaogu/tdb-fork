@@ -1,0 +1,54 @@
+[package]
+name = "supabase-auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "GoTrue-compatible authentication service for Supabase compatibility layer"
+
+[dependencies]
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Web
+actix-web = { workspace = true }
+actix-cors = { workspace = true }
+
+# URL parsing
+url = "2.5"
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+
+# Security
+jsonwebtoken = { workspace = true }
+argon2 = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+base64 = { workspace = true }
+uuid = { workspace = true }
+rand = { workspace = true }
+
+# HTTP Client (for OAuth)
+reqwest = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# Error Handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Observability
+tracing = { workspace = true }
+
+# Concurrency
+parking_lot = "0.12"
+
+# Internal
+supabase-common = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }

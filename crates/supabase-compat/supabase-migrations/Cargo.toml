@@ -1,0 +1,17 @@
+[package]
+name = "supabase-migrations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Migration tools for Supabase compatibility layer"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+parking_lot = "0.12"
+supabase-common = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }

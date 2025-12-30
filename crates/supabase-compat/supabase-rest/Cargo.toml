@@ -1,0 +1,56 @@
+[package]
+name = "supabase-rest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "PostgREST-compatible REST API for Supabase compatibility layer"
+
+[dependencies]
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Web
+actix-web = { workspace = true }
+actix-cors = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+bytes = { workspace = true }
+
+# SQL parsing
+sqlparser = "0.43"
+
+# OpenAPI
+utoipa = { workspace = true }
+utoipa-swagger-ui = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# Error Handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Observability
+tracing = { workspace = true }
+
+# Concurrency
+parking_lot = "0.12"
+
+# Utils
+uuid = { workspace = true }
+regex = "1.10"
+url = "2.5"
+
+# Internal
+supabase-common = { workspace = true }
+supabase-auth = { workspace = true }
+supabase-rls = { workspace = true }
+
+# Base64
+base64 = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }

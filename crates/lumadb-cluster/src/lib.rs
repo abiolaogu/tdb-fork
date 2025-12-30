@@ -4,9 +4,12 @@
 //! - Placement driver
 //! - Partition scheduling
 //! - Membership management
+//! - Auto-sharding for horizontal scaling
 
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
+
+pub mod sharding;
 
 use std::sync::Arc;
 use std::collections::HashMap;
@@ -19,6 +22,8 @@ use lumadb_common::config::ClusterConfig;
 use lumadb_common::error::Result;
 use lumadb_common::types::{NodeId, NodeInfo, NodeStatus, ClusterStatus};
 use lumadb_raft::RaftEngine;
+
+pub use sharding::{AutoShardingEngine, ShardingConfig, ShardingStats, Shard, ShardStatus};
 
 /// Cluster manager
 pub struct ClusterManager {

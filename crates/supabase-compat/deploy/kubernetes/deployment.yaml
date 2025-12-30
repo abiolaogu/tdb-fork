@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lumadb-supabase
+  labels:
+    app: lumadb-supabase
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lumadb-supabase
+  template:
+    metadata:
+      labels:
+        app: lumadb-supabase
+    spec:
+      containers:
+        - name: supabase
+          image: lumadb/supabase-compat:latest
+          ports:
+            - containerPort: 3000
+              name: rest
+            - containerPort: 9999
+              name: auth
+            - containerPort: 4000
+              name: realtime
+            - containerPort: 5000
+              name: storage
+          env:
+            - name: RUST_LOG
+              value: "info"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lumadb-supabase-secrets
+                  key: jwt-secret
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: lumadb-supabase-secrets
+                  key: database-url
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lumadb-supabase
+spec:
+  type: ClusterIP
+  selector:
+    app: lumadb-supabase
+  ports:
+    - name: rest
+      port: 3000
+      targetPort: 3000
+    - name: auth
+      port: 9999
+      targetPort: 9999
+    - name: realtime
+      port: 4000
+      targetPort: 4000
+    - name: storage
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: lumadb-supabase-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lumadb-supabase
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lumadb-multicompat
+  namespace: lumadb
+  labels:
+    app: lumadb-multicompat
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lumadb-multicompat
+  template:
+    metadata:
+      labels:
+        app: lumadb-multicompat
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: lumadb
+        image: lumadb/multicompat:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: lumadb-config
+        - secretRef:
+            name: lumadb-secrets
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: lumadb-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lumadb-service
+  namespace: lumadb
+  labels:
+    app: lumadb-multicompat
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: lumadb-multicompat
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lumadb-config
+  namespace: lumadb
+data:
+  RUST_LOG: "info"
+  ENABLE_DYNAMODB: "true"
+  ENABLE_D1: "true"
+  ENABLE_TURSO: "true"
+  STORAGE_TYPE: "memory" # or "fs"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lumadb-secrets
+  namespace: lumadb
+type: Opaque
+data:
+  # base64 encoded "secret-key"
+  AWS_SECRET_ACCESS_KEY: "c2VjcmV0LWtleQ==" 
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lumadb-pvc
+  namespace: lumadb
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: lumadb-hpa
+  namespace: lumadb
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lumadb-multicompat
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

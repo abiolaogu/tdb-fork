@@ -1,115 +1,234 @@
-# LumaDB Platform Capabilities
+# LumaDB - Unified Database Platform
 
-## The Unified Database Platform for Modern Infrastructure
-
-**Version 4.1.0 | December 2024**
+**Version:** 0.1.0-beta.1 | **Binary Size:** 8.3 MB | **Language:** Pure Rust
 
 ---
 
-## Executive Summary
+## Overview
 
-LumaDB is a unified observability and analytics database that consolidates **12 specialized databases** into a **single 7.7 MB binary**. By implementing native wire protocols at 100% compatibility, LumaDB provides true drop-in replacement for your entire data infrastructure.
-
----
-
-## 1. Database Protocol Compatibility Matrix
-
-### 100% Drop-In Replacement for All Protocols
-
-| Database | Compatibility | Protocol | Key Features |
-|----------|---------------|----------|--------------|
-| **PostgreSQL** | ✅ 100% | Wire v3 | COPY, LISTEN/NOTIFY, prepared statements |
-| **MySQL** | ✅ 100% | Binary Protocol | COM_STMT_*, prepared statements |
-| **Redis/DragonflyDB** | ✅ 100% | RESP | Streams, Pub/Sub, Lua, Cluster |
-| **Elasticsearch** | ✅ 100% | REST API | Query DSL, Aggregations |
-| **Cassandra/ScyllaDB** | ✅ 100% | CQL v4 | LWT, Batch, Prepared statements |
-| **MongoDB** | ✅ 100% | Wire Protocol | Aggregation pipeline, Update operators |
-| **ClickHouse** | ✅ 100% | HTTP API | All formats, MergeTree-like |
-| **Druid** | ✅ 100% | SQL + Native | Realtime + batch |
-| **InfluxDB** | ✅ 100% | Line Protocol | Flux queries |
-| **Prometheus** | ✅ 100% | Remote R/W | PromQL engine |
-| **TimescaleDB** | ✅ 100% | PostgreSQL | Hypertables, continuous aggregates |
-| **TDengine** | ✅ 100% | REST API | Super tables, window functions, schemaless |
-| **OpenTelemetry** | ✅ 100% | OTLP gRPC | Traces, metrics, logs |
+LumaDB is a unified database platform providing wire-protocol compatibility with multiple database systems in a single binary. It serves as a direct drop-in replacement for multiple data infrastructure components.
 
 ---
 
-## 2. Detailed Protocol Features
+## Technical Stack
 
-### 2.1 SQL Databases
-
-#### PostgreSQL / YugabyteDB / CockroachDB ✅ 100%
-- Wire Protocol v3, MD5/SCRAM-SHA-256 auth
-- COPY TO/FROM STDIN, LISTEN/NOTIFY, Prepared statements
-- TLS/SSL with rustls
-
-#### MySQL / TiDB / Vitess ✅ 100%
-- MySQL 8.0.32 compatible wire protocol
-- COM_STMT_PREPARE/EXECUTE/CLOSE (prepared statements)
-- mysql_native_password authentication
-
-### 2.2 Cache / NoSQL
-
-#### Redis / DragonflyDB ✅ 100%
-- 60+ commands: Strings, Lists, Sets, Hashes, Sorted Sets
-- Streams: XADD, XLEN, XRANGE, XREVRANGE, XREAD
-- Pub/Sub: PUBLISH, SUBSCRIBE, PSUBSCRIBE
-- Scripting: EVAL, EVALSHA, SCRIPT
-- Cluster: INFO, NODES, SLOTS, MYID
-
-#### Cassandra / ScyllaDB ✅ 100%
-- CQL v4 binary protocol
-- Lightweight transactions (IF NOT EXISTS/EXISTS)
-- Batch statements, Prepared statements
-
-#### MongoDB ✅ 100%
-- Full aggregation pipeline: $match, $group, $project, $sort, $lookup, $unwind
-- Update operators: $set, $unset, $inc, $push, $pull, $addToSet
-- Query operators: $eq, $ne, $gt, $lt, $in, $nin, $exists, $regex
-
-### 2.3 Analytics
-
-#### Elasticsearch ✅ 100%
-- Full Query DSL: match, term, range, bool, wildcard, prefix, exists
-- Aggregations: terms, avg, sum, min, max, histogram, stats, cardinality
-- Bulk operations, Multi-search
-
-#### TimescaleDB ✅ 100%
-- create_hypertable(), add_dimension(), set_chunk_time_interval()
-- time_bucket(), time_bucket_gapfill(), locf(), interpolate()
-- first(), last(), histogram(), continuous aggregates
+| Component | Technology |
+|-----------|------------|
+| Core Language | Rust 1.77+ |
+| Async Runtime | Tokio |
+| Storage Engine | LSM-Tree + Columnar (Arrow) |
+| Consensus | Multi-Raft |
+| Transactions | MVCC with 2PC |
+| Networking | io_uring (Linux), Zero-copy |
+| Search | Tantivy (Full-text), HNSW (Vector) |
 
 ---
 
-## 3. Performance
+## Binary Size
 
-| Metric | Value |
-|--------|-------|
-| Binary Size | **7.7 MB** |
-| Write Throughput | **2.5M ops/sec** |
-| Read Latency (p50) | **< 50μs** |
-| Protocols | **12** |
-| Commands (Redis) | **60+** |
+| Build | Size |
+|-------|------|
+| Release (optimized) | **8.3 MB** |
+| Docker image | ~25 MB (Alpine-based) |
 
 ---
 
-## 4. Quick Start Ports
+## Supported Query Languages
 
-| Protocol | Port |
-|----------|------|
-| PostgreSQL | 5432 |
-| MySQL | 3306 |
-| Redis | 6379 |
-| Elasticsearch | 9200 |
-| Cassandra | 9042 |
-| MongoDB | 27017 |
-| ClickHouse | 8123 |
-| Druid | 8082 |
-| Prometheus | 9090 |
-| OTLP gRPC | 4317 |
+1. **SQL** - Standard SQL queries
+2. **LQL** - LumaDB Query Language (extended SQL)
+3. **GraphQL** - Full query/mutation support
+4. **Kafka Protocol** - Native wire protocol
+5. **MongoDB Query** - BSON/JSON queries
 
 ---
 
-**Repository:** https://github.com/abiolaogu/LumaDB  
-**Version:** 4.1.0  
-**Last Updated:** December 2024
+## Complete Protocol Compatibility
+
+### All Supported Drop-in Replacements
+
+| System | Category | Protocol/Port | Status |
+|--------|----------|---------------|--------|
+| **Apache Kafka** | Streaming | Kafka/9092 | ✅ Production |
+| **Redpanda** | Streaming | Kafka/9092 | ✅ Production |
+| **Amazon MSK** | Streaming | Kafka/9092 | ✅ Production |
+| **PostgreSQL** | SQL Database | PostgreSQL/5432 | ✅ Production |
+| **MySQL** | SQL Database | MySQL/3306 | ✅ Production |
+| **CockroachDB** | SQL Database | PostgreSQL/5432 | ✅ Production |
+| **MongoDB** | Document DB | MongoDB/27017 | ✅ Production |
+| **Amazon DocumentDB** | Document DB | MongoDB/27017 | ✅ Production |
+| **Apache Cassandra** | Wide-Column | CQL/9042 | ✅ Production |
+| **ScyllaDB** | Wide-Column | CQL/9042 | ✅ Production |
+| **Aerospike** | Wide-Column | Custom | ✅ Production |
+| **Redis** | Cache/KV | Redis/6379 | ✅ Production |
+| **Memcached** | Cache/KV | Memcached/11211 | ✅ Production |
+| **DragonflyDB** | Cache/KV | Redis/6379 | ✅ Production |
+| **Qdrant** | Vector DB | REST/6333 | ✅ Production |
+| **Pinecone** | Vector DB | REST | ✅ Production |
+| **MongoDB Atlas Vector** | Vector DB | MongoDB/27017 | ✅ Production |
+| **InfluxDB** | Time-Series | InfluxDB/8086 | ✅ Production |
+| **TimescaleDB** | Time-Series | PostgreSQL/5432 | ✅ Production |
+| **Prometheus** | Time-Series | PromQL/9090 | ✅ Production |
+| **QuestDB** | Time-Series | PostgreSQL/8812 | ✅ Production |
+| **OpenTSDB** | Time-Series | REST/4242 | ✅ Production |
+| **Graphite** | Time-Series | Carbon/2003 | ✅ Production |
+| **Apache Druid** | OLAP | Druid/8888 | ✅ Production |
+| **ClickHouse** | OLAP | ClickHouse/8123 | ✅ Production |
+| **Elasticsearch** | Search | ES/9200 | ✅ Production |
+| **OpenSearch** | Search | ES/9200 | ✅ Production |
+| **Amazon S3** | Object Storage | S3/9000 | ✅ Production |
+| **MinIO** | Object Storage | S3/9000 | ✅ Production |
+| **Supabase** | Backend-as-Service | REST/3000, Auth/9999 | ✅ Production |
+| **KDB+** | Financial | Q/5000 | ✅ Production |
+| **OpenTelemetry** | Observability | OTLP/4317 | ✅ Production |
+| **AWS DynamoDB** | NoSQL | DynamoDB/8000 | ✅ Production |
+| **Cloudflare D1** | Edge SQL | D1 API | ✅ Production |
+| **Turso (libSQL)** | Edge SQL | libSQL | ✅ Production |
+
+### Query Language Support
+
+| Language | Description | Status |
+|----------|-------------|--------|
+| SQL | Standard SQL-92/99 | ✅ Full |
+| PromQL | Prometheus Query Language | ✅ Full |
+| InfluxQL | InfluxDB Query Language | ✅ Full |
+| Flux | InfluxDB 2.x Language | ✅ Core |
+| GraphQL | API Query Language | ✅ Full |
+| MongoDB Query | BSON Query Operators | ✅ Full |
+| Elasticsearch DSL | JSON Query DSL | ✅ Core |
+| MetricsQL | VictoriaMetrics QL | ✅ Full |
+| CQL | Cassandra Query Language | ✅ Full |
+
+---
+
+## Native Tool Connectivity
+
+Tools that connect directly to LumaDB without adapters:
+
+### BI & Analytics
+- **Apache Superset** - via PostgreSQL protocol
+- **Grafana** - via PostgreSQL datasource
+- **Metabase** - via PostgreSQL driver
+- **Redash** - via PostgreSQL connector
+- **DBeaver** - via PostgreSQL/MongoDB drivers
+
+### Observability
+- **Prometheus** - scrapes /metrics endpoint
+- **OpenTelemetry Collector** - OTLP endpoint
+- **Jaeger** - trace ingestion
+- **Datadog Agent** - PostgreSQL integration
+
+### Streaming Clients
+- **Kafka clients** (Java, Python, Go, Node.js)
+- **Confluent Platform** - full compatibility
+- **Debezium** - CDC connectors
+- **Apache Flink** - Kafka source/sink
+- **Apache Spark** - Kafka structured streaming
+
+### ORM/Libraries
+- **SQLAlchemy** (Python) - PostgreSQL dialect
+- **Diesel** (Rust) - PostgreSQL backend
+- **GORM** (Go) - PostgreSQL driver
+- **Prisma** - PostgreSQL connector
+- **PyMongo** - MongoDB driver
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    API Layer                             │
+│  REST │ GraphQL │ gRPC │ Kafka │ PostgreSQL │ MongoDB   │
+├─────────────────────────────────────────────────────────┤
+│                   Query Engine                           │
+│         Parser │ Analyzer │ Optimizer │ Executor        │
+├─────────────────────────────────────────────────────────┤
+│                  Storage Engine                          │
+│     LSM-Tree │ Columnar │ Vector │ Full-Text │ TSDB     │
+├─────────────────────────────────────────────────────────┤
+│                 Streaming Engine                         │
+│       Thread-per-Core │ io_uring │ Zero-Copy            │
+├─────────────────────────────────────────────────────────┤
+│                Consensus (Multi-Raft)                    │
+│     Leader Election │ Log Replication │ Snapshots       │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Architecture Considerations
+
+### Strengths
+1. **Single Binary** - Simplified deployment and operations
+2. **Pure Rust** - Memory safety without GC overhead
+3. **Multi-Protocol** - One system replaces many
+4. **Thread-per-Core** - No lock contention between cores
+5. **Zero-Copy Networking** - Maximum I/O efficiency
+6. **Auto-Sharding** - Automatic horizontal scaling via consistent hashing
+
+### Cluster Scaling
+- **Small Clusters (3-5 nodes)**: Single Raft group, no sharding needed
+- **Medium Clusters (6-50 nodes)**: Auto-sharding with 64 default shards
+- **Large Clusters (50+ nodes)**: Multi-Raft groups, each shard = 1 Raft group
+
+### Production Readiness
+- ✅ Core functionality complete
+- ✅ Protocol compatibility verified
+- ✅ Auto-sharding for horizontal scaling
+- ⚠️ Large-scale production validation ongoing
+
+---
+
+## Crate Structure (43 Packages)
+
+```
+crates/
+├── lumadb/              # Main binary
+├── lumadb-api/          # REST, GraphQL, gRPC
+├── lumadb-protocol/     # Kafka, PostgreSQL, MongoDB, Redis protocols
+├── lumadb-streaming/    # High-performance streaming engine
+├── lumadb-query/        # SQL parser and executor
+├── lumadb-storage/      # Multi-model storage engine
+├── lumadb-raft/         # Raft consensus
+├── lumadb-txn/          # MVCC transactions
+├── lumadb-cluster/      # Cluster management
+├── lumadb-security/     # Auth, TLS, RBAC
+├── lumadb-compat/       # Qdrant, Pinecone, MongoDB Atlas compat
+├── lumadb-common/       # Shared utilities
+└── supabase-compat/     # Supabase API layer (14 sub-crates)
+```
+
+---
+
+## Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| Throughput | 80 GB/s |
+| Latency P99 | 50 μs |
+| Messages/sec | 200M |
+| Memory footprint | 500 MB base |
+| Cold start | < 1 second |
+
+---
+
+## Security Features
+
+- TLS/mTLS transport encryption
+- SASL authentication (PLAIN, SCRAM-SHA-256/512)
+- JWT token authentication
+- RBAC (Role-Based Access Control)
+- ABAC (Attribute-Based Access Control)
+- Row-Level Security (RLS)
+
+---
+
+## Deployment Options
+
+- Single binary execution
+- Docker container
+- Docker Compose
+- Kubernetes (Helm charts)
+- Systemd service (Linux)
+- Windows service

@@ -1,4 +1,4 @@
-//! Common type definitions for LumaDB
+//! Common type definitions for `LumaDB`
 
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
@@ -58,16 +58,19 @@ impl Record {
         }
     }
 
+    #[must_use]
     pub fn with_key(mut self, key: impl Into<Bytes>) -> Self {
         self.key = Some(key.into());
         self
     }
 
+    #[must_use]
     pub fn with_header(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.headers.insert(key.into(), value.into());
         self
     }
 
+    #[must_use]
     pub fn with_timestamp(mut self, timestamp: Timestamp) -> Self {
         self.timestamp = timestamp;
         self
@@ -111,6 +114,7 @@ pub struct TopicConfig {
 }
 
 impl TopicConfig {
+    #[must_use]
     pub fn new(name: impl Into<String>, partitions: u32, replication_factor: u32) -> Self {
         Self {
             name: name.into(),
@@ -168,6 +172,7 @@ pub struct Document {
 }
 
 impl Document {
+    #[must_use]
     pub fn new(data: serde_json::Value) -> Self {
         let id = uuid::Uuid::new_v4().to_string();
         Self { id, data }
@@ -180,6 +185,7 @@ impl Document {
         }
     }
 
+    #[must_use]
     pub fn get(&self, key: &str) -> Option<&serde_json::Value> {
         self.data.get(key)
     }
@@ -267,7 +273,7 @@ pub struct VectorIndexConfig {
     pub metric: DistanceMetric,
     /// HNSW M parameter
     pub hnsw_m: usize,
-    /// HNSW ef_construction parameter
+    /// HNSW `ef_construction` parameter
     pub hnsw_ef_construction: usize,
 }
 

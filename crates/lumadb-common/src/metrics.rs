@@ -1,4 +1,10 @@
 //! Metrics and observability for LumaDB
+#![allow(clippy::non_std_lazy_statics)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::inefficient_to_string)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::doc_markdown)]
 
 use metrics::{counter, gauge, histogram};
 use parking_lot::RwLock;
@@ -43,7 +49,7 @@ impl MetricsRegistry {
             value,
             labels: labels
                 .iter()
-                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .map(|(k, v)| (k.to_string(), (*v).to_string()))
                 .collect(),
         });
     }
@@ -207,6 +213,7 @@ pub fn set_replication_lag(follower_id: u64, lag_entries: u64) {
 // ============================================================================
 
 /// Export metrics in Prometheus format
+#[must_use]
 pub fn export_prometheus() -> String {
     let encoder = TextEncoder::new();
     let metric_families = prometheus::gather();
@@ -218,7 +225,7 @@ pub fn export_prometheus() -> String {
     let uptime = format!("# HELP lumadb_uptime_seconds Server uptime in seconds\n# TYPE lumadb_uptime_seconds gauge\nlumadb_uptime_seconds {}\n", registry.uptime_secs());
 
     let metrics_str = String::from_utf8(buffer).unwrap_or_default();
-    format!("{}{}", uptime, metrics_str)
+    format!("{uptime}{metrics_str}")
 }
 
 /// Timer guard for automatic latency recording
@@ -229,21 +236,24 @@ pub struct LatencyTimer {
 }
 
 impl LatencyTimer {
+    #[must_use]
     pub fn new(metric_name: &str, labels: &[(&str, &str)]) -> Self {
         Self {
             start: Instant::now(),
             metric_name: metric_name.to_string(),
             labels: labels
                 .iter()
-                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
                 .collect(),
         }
     }
 
+    #[must_use]
     pub fn elapsed_us(&self) -> f64 {
-        self.start.elapsed().as_micros() as f64
+        self.start.elapsed().as_secs_f64() * 1_000_000.0
     }
 
+    #[must_use]
     pub fn elapsed_ms(&self) -> f64 {
         self.start.elapsed().as_secs_f64() * 1000.0
     }

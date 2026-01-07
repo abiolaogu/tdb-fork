@@ -96,6 +96,17 @@ impl StorageEngine {
         *self.running.read()
     }
 
+    /// Check if storage engine is healthy (performs basic health checks)
+    pub async fn is_healthy(&self) -> bool {
+        // Check if engine is running
+        if !*self.running.read() {
+            return false;
+        }
+
+        // Verify database is accessible by performing a simple read operation
+        self.db.contains_key("__health_check__").is_ok()
+    }
+
     /// Get or create an LSM tree for a collection
     pub fn get_or_create_lsm(&self, name: &str) -> Arc<LsmTree> {
         self.lsm_trees

@@ -37,16 +37,42 @@ impl RestServer {
         })
     }
 
+    /// Build CORS middleware based on configuration
+    fn build_cors(origins: &[String]) -> Cors {
+        // If "*" is in the list or list is empty, use permissive mode (development only)
+        if origins.is_empty() || origins.iter().any(|o| o == "*") {
+            tracing::warn!("CORS is configured with wildcard origin - not recommended for production");
+            return Cors::permissive();
+        }
+
+        // Configure CORS with specific origins for production security
+        let mut cors = Cors::default()
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+            .allowed_headers(vec![
+                actix_web::http::header::AUTHORIZATION,
+                actix_web::http::header::ACCEPT,
+                actix_web::http::header::CONTENT_TYPE,
+            ])
+            .max_age(3600);
+
+        for origin in origins {
+            cors = cors.allowed_origin(origin);
+        }
+
+        cors
+    }
+
     /// Run the REST server
     pub async fn run(&self) -> Result<()> {
         let query = self.query.clone();
         let streaming = self.streaming.clone();
         let security = self.security.clone();
+        let cors_origins = self.config.cors_origins.clone();
 
         info!("Starting REST API server on {}:{}", self.config.host, self.config.port);
 
         HttpServer::new(move || {
-            let cors = Cors::permissive();
+            let cors = Self::build_cors(&cors_origins);
 
             App::new()
                 .app_data(web::Data::new(query.clone()))

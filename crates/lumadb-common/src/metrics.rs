@@ -218,11 +218,20 @@ pub fn export_prometheus() -> String {
     let encoder = TextEncoder::new();
     let metric_families = prometheus::gather();
     let mut buffer = Vec::new();
-    encoder.encode(&metric_families, &mut buffer).unwrap();
+
+    if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
+        tracing::warn!("Failed to encode Prometheus metrics: {}", e);
+        return String::new();
+    }
 
     // Add custom metrics from our registry
     let registry = MetricsRegistry::global();
-    let uptime = format!("# HELP lumadb_uptime_seconds Server uptime in seconds\n# TYPE lumadb_uptime_seconds gauge\nlumadb_uptime_seconds {}\n", registry.uptime_secs());
+    let uptime = format!(
+        "# HELP lumadb_uptime_seconds Server uptime in seconds\n\
+         # TYPE lumadb_uptime_seconds gauge\n\
+         lumadb_uptime_seconds {}\n",
+        registry.uptime_secs()
+    );
 
     let metrics_str = String::from_utf8(buffer).unwrap_or_default();
     format!("{uptime}{metrics_str}")

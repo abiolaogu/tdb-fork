@@ -62,21 +62,133 @@ impl Default for Config {
 }
 
 impl Config {
-    /// Load configuration from a YAML/TOML file
+    /// Load configuration from a YAML/TOML/JSON file
     pub async fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
         let content = tokio::fs::read_to_string(path.as_ref())
             .await
             .map_err(|e| Error::Config(format!("Failed to read config file: {}", e)))?;
 
-        let config: Config = if path.as_ref().extension().map_or(false, |ext| ext == "toml") {
-            toml::from_str(&content)
-                .map_err(|e| Error::Config(format!("Failed to parse TOML config: {}", e)))?
-        } else {
-            serde_json::from_str(&content)
-                .map_err(|e| Error::Config(format!("Failed to parse JSON config: {}", e)))?
+        let extension = path.as_ref().extension().and_then(|e| e.to_str());
+        let config: Config = match extension {
+            Some("toml") => toml::from_str(&content)
+                .map_err(|e| Error::Config(format!("Failed to parse TOML config: {}", e)))?,
+            Some("yaml") | Some("yml") => serde_yaml::from_str(&content)
+                .map_err(|e| Error::Config(format!("Failed to parse YAML config: {}", e)))?,
+            Some("json") => serde_json::from_str(&content)
+                .map_err(|e| Error::Config(format!("Failed to parse JSON config: {}", e)))?,
+            _ => {
+                // Try to auto-detect format
+                if content.trim().starts_with('{') {
+                    serde_json::from_str(&content)
+                        .map_err(|e| Error::Config(format!("Failed to parse JSON config: {}", e)))?
+                } else if content.contains(':') && !content.contains('=') {
+                    serde_yaml::from_str(&content)
+                        .map_err(|e| Error::Config(format!("Failed to parse YAML config: {}", e)))?
+                } else {
+                    toml::from_str(&content)
+                        .map_err(|e| Error::Config(format!("Failed to parse TOML config: {}", e)))?
+                }
+            }
         };
 
+        // Validate the configuration
+        config.validate()?;
+
         Ok(config)
+    }
+
+    /// Validate the configuration
+    pub fn validate(&self) -> Result<()> {
+        // Validate server config
+        if self.server.workers > 1024 {
+            return Err(Error::Config(
+                "Server workers cannot exceed 1024".to_string(),
+            ));
+        }
+
+        // Validate storage config
+        if self.storage.max_memory_bytes < 64 * 1024 * 1024 {
+            return Err(Error::Config(
+                "Storage max_memory_bytes must be at least 64MB".to_string(),
+            ));
+        }
+
+        // Validate streaming config
+        if self.streaming.default_partitions == 0 {
+            return Err(Error::Config(
+                "Streaming default_partitions must be at least 1".to_string(),
+            ));
+        }
+        if self.streaming.segment_size_bytes < 1024 * 1024 {
+            return Err(Error::Config(
+                "Streaming segment_size_bytes must be at least 1MB".to_string(),
+            ));
+        }
+
+        // Validate query config
+        if self.query.max_execution_time_ms == 0 {
+            return Err(Error::Config(
+                "Query max_execution_time_ms must be greater than 0".to_string(),
+            ));
+        }
+        if self.query.cache_size == 0 && self.query.cache_enabled {
+            return Err(Error::Config(
+                "Query cache_size must be greater than 0 when cache is enabled".to_string(),
+            ));
+        }
+
+        // Validate API config
+        if self.api.rest.enabled && self.api.rest.port == 0 {
+            return Err(Error::Config("REST API port cannot be 0".to_string()));
+        }
+        if self.api.graphql.enabled && self.api.graphql.port == 0 {
+            return Err(Error::Config("GraphQL API port cannot be 0".to_string()));
+        }
+        if self.api.grpc.enabled && self.api.grpc.port == 0 {
+            return Err(Error::Config("gRPC API port cannot be 0".to_string()));
+        }
+
+        // Validate Raft config
+        if self.raft.election_timeout_min_ms >= self.raft.election_timeout_max_ms {
+            return Err(Error::Config(
+                "Raft election_timeout_min_ms must be less than election_timeout_max_ms"
+                    .to_string(),
+            ));
+        }
+        if self.raft.heartbeat_interval_ms >= self.raft.election_timeout_min_ms {
+            return Err(Error::Config(
+                "Raft heartbeat_interval_ms must be less than election_timeout_min_ms".to_string(),
+            ));
+        }
+
+        // Validate security config
+        if self.security.auth_enabled && self.security.auth_method == "jwt" {
+            if self.security.jwt_secret.is_empty() {
+                return Err(Error::Config(
+                    "JWT secret is required when auth_method is 'jwt'".to_string(),
+                ));
+            }
+            if self.security.jwt_secret.len() < 16 {
+                return Err(Error::Config(
+                    "JWT secret must be at least 16 characters".to_string(),
+                ));
+            }
+        }
+
+        if self.security.tls_enabled {
+            if self.security.tls_cert_path.is_none() {
+                return Err(Error::Config(
+                    "TLS certificate path is required when TLS is enabled".to_string(),
+                ));
+            }
+            if self.security.tls_key_path.is_none() {
+                return Err(Error::Config(
+                    "TLS key path is required when TLS is enabled".to_string(),
+                ));
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -387,16 +499,19 @@ pub struct SecurityConfig {
 
 fn default_jwt_secret() -> String {
     std::env::var("LUMADB_JWT_SECRET").unwrap_or_else(|_| {
-        // Generate a random secret if not provided (development only)
-        use std::collections::hash_map::RandomState;
-        use std::hash::{BuildHasher, Hasher};
-        let s = RandomState::new();
-        let mut hasher = s.build_hasher();
-        hasher.write_u64(std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos() as u64);
-        format!("dev-secret-{:x}", hasher.finish())
+        // Generate a cryptographically secure random secret (development only)
+        // WARNING: In production, always set LUMADB_JWT_SECRET environment variable
+        use base64::Engine;
+        use rand::Rng;
+
+        let mut rng = rand::thread_rng();
+        let secret_bytes: [u8; 32] = rng.gen();
+        let encoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(secret_bytes);
+
+        tracing::warn!(
+            "Using auto-generated JWT secret. Set LUMADB_JWT_SECRET env var for production."
+        );
+        format!("dev-{}", encoded)
     })
 }
 
@@ -416,5 +531,201 @@ impl Default for SecurityConfig {
             tls_key_path: None,
             audit_enabled: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config_is_valid() {
+        let config = Config::default();
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_server_workers_validation() {
+        let mut config = Config::default();
+        config.server.workers = 2000;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_storage_memory_validation() {
+        let mut config = Config::default();
+        config.storage.max_memory_bytes = 1024; // Too small
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_streaming_partitions_validation() {
+        let mut config = Config::default();
+        config.streaming.default_partitions = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_streaming_segment_size_validation() {
+        let mut config = Config::default();
+        config.streaming.segment_size_bytes = 1024; // Too small
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_query_timeout_validation() {
+        let mut config = Config::default();
+        config.query.max_execution_time_ms = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_query_cache_size_validation() {
+        let mut config = Config::default();
+        config.query.cache_enabled = true;
+        config.query.cache_size = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_api_port_validation() {
+        let mut config = Config::default();
+        config.api.rest.enabled = true;
+        config.api.rest.port = 0;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_raft_timeout_validation() {
+        let mut config = Config::default();
+        config.raft.election_timeout_min_ms = 300;
+        config.raft.election_timeout_max_ms = 150;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_raft_heartbeat_validation() {
+        let mut config = Config::default();
+        config.raft.heartbeat_interval_ms = 200;
+        config.raft.election_timeout_min_ms = 150;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_security_jwt_validation() {
+        let mut config = Config::default();
+        config.security.auth_enabled = true;
+        config.security.auth_method = "jwt".to_string();
+        config.security.jwt_secret = "short".to_string(); // Too short
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_security_tls_validation() {
+        let mut config = Config::default();
+        config.security.tls_enabled = true;
+        config.security.tls_cert_path = None;
+        assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_jwt_secret_generation() {
+        let secret1 = default_jwt_secret();
+        let secret2 = default_jwt_secret();
+        // Each call should generate a different secret
+        assert_ne!(secret1, secret2);
+        // Secret should be long enough
+        assert!(secret1.len() >= 32);
+    }
+
+    #[test]
+    fn test_default_values() {
+        let config = Config::default();
+        assert_eq!(config.api.rest.port, 8080);
+        assert_eq!(config.api.graphql.port, 8081);
+        assert_eq!(config.api.grpc.port, 8082);
+        assert_eq!(config.kafka.port, 9092);
+        assert!(config.query.cache_enabled);
+        assert!(config.storage.wal_enabled);
+    }
+
+    #[tokio::test]
+    async fn test_load_toml_config() {
+        use std::io::Write;
+        let mut file = tempfile::NamedTempFile::with_suffix(".toml").unwrap();
+        writeln!(
+            file,
+            r#"
+[server]
+node_id = 1
+bind_address = "127.0.0.1"
+data_dir = "/tmp/lumadb"
+workers = 4
+
+[storage]
+path = "/tmp/lumadb/data"
+max_memory_bytes = 1073741824
+wal_enabled = true
+"#
+        )
+        .unwrap();
+
+        let config = Config::load(file.path()).await.unwrap();
+        assert_eq!(config.server.node_id, 1);
+        assert_eq!(config.server.bind_address, "127.0.0.1");
+        assert_eq!(config.storage.path, "/tmp/lumadb/data");
+    }
+
+    #[tokio::test]
+    async fn test_load_json_config() {
+        use std::io::Write;
+        let mut file = tempfile::NamedTempFile::with_suffix(".json").unwrap();
+        writeln!(
+            file,
+            r#"{{
+  "server": {{
+    "node_id": 2,
+    "bind_address": "0.0.0.0",
+    "data_dir": "/data",
+    "workers": 8
+  }}
+}}"#
+        )
+        .unwrap();
+
+        let config = Config::load(file.path()).await.unwrap();
+        assert_eq!(config.server.node_id, 2);
+        assert_eq!(config.server.workers, 8);
+    }
+
+    #[tokio::test]
+    async fn test_load_yaml_config() {
+        use std::io::Write;
+        let mut file = tempfile::NamedTempFile::with_suffix(".yaml").unwrap();
+        writeln!(
+            file,
+            r#"
+server:
+  node_id: 3
+  bind_address: "localhost"
+  data_dir: "/opt/lumadb"
+  workers: 2
+
+storage:
+  path: "/opt/lumadb/data"
+  max_memory_bytes: 2147483648
+  wal_enabled: true
+  wal_sync_mode: "fsync"
+  compaction_interval_secs: 3600
+  compression_enabled: true
+  compression_algorithm: "zstd"
+"#
+        )
+        .unwrap();
+
+        let config = Config::load(file.path()).await.unwrap();
+        assert_eq!(config.server.node_id, 3);
+        assert_eq!(config.server.bind_address, "localhost");
+        assert_eq!(config.storage.compression_algorithm, "zstd");
     }
 }
